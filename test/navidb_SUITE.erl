@@ -23,17 +23,6 @@ groups() ->
 
 init_per_suite(Config) ->
     error_logger:tty(false),
-    ok = application:load(navidb),
-
-    {ok, _PoolConfig} = application:get_env(navidb, connect_pool),
-    % ok = application:set_env(navidb, hostname, "localhost"),
-    % ok = application:set_env(navidb, port, 27017),
-
-    % Это единственное значение, которое не имеет умолчания и должно быть задано явно
-    ok = application:set_env(navidb, database, <<"navicc_test">>),
-
-    % Можно загрузить модули вручную
-    % syntax_tools,compiler,goldrush,lager,mnesia,poolboy,bson,mongodb,navidb
     {ok, Modules} = application:ensure_all_started(navidb),
     [{modules, Modules} | Config].
 
@@ -144,6 +133,7 @@ wait_echo(Resource, Id) ->
     after 10000 ->
         erlang:error(timeout)
     end.
+
 
 % Фальшивый обработчик websocket-соединения.
 % регистрируется

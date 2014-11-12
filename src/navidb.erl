@@ -14,6 +14,7 @@
 %%%     </dd>
 %%% </dl>
 %%% @end
+%%% @todo Testing TODO notes.
 -module(navidb).
 
 -export([
@@ -259,17 +260,19 @@ get_geos(Skey, From, To) ->
 
 get_all_systems() ->
     Pipeline = [
-        {'$project', {
-            '_id', 1, imei, 1, date, 1, hwid, 1, swid, 1
+        #{'$project' => #{
+            '_id' => 1, imei => 1, date => 1, hwid => 1, swid => 1
         }},
-        {'$sort', {date, 1}}
+        #{'$sort' => #{date => 1}}
     ],
-    case navidb_mongodb:aggregate(collection_name(systems), Pipeline) of
-        [] ->
-            [];
-        Doc ->
-            navidb_mongodb:bson_to_json(Doc)
-    end.
+    navidb_mongodb:aggregate(collection_name(systems), Pipeline).
+    % case navidb_mongodb:aggregate(collection_name(systems), Pipeline) of
+    %     [] ->
+    %         [];
+    %     Doc ->
+    %         % navidb_mongodb:bson_to_json(Doc)
+    %         Doc
+    % end.
 
 
 % Private

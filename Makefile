@@ -11,9 +11,14 @@ deps:
 compile: deps
 	$(REBAR) compile
 
-tests: deps
-	$(REBAR) ct skip_deps=true
+# tests: deps
+#	$(REBAR) ct skip_deps=true
 
 clean:
 	$(REBAR) clean delete-deps
 
+travis:
+	$(REBAR) clean delete-deps
+	$(REBAR) get-deps
+	$(REBAR) -C rebar_ct.config compile
+	$(REBAR) -C rebar_ct.config ct skip_deps=true -v
