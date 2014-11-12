@@ -16,7 +16,7 @@ main() -> main([]).
 
 main(_) ->
     ok = filelib:ensure_dir(?SITEPATH), % output directory
-    "==> navidb (doc)\n" = os:cmd("./rebar doc"), % build docs
+    "==> navidb (doc)\n" = os:cmd("./rebar doc skip_deps=true"), % build docs
     Overview = ?DOCPATH "overview-summary.html",
     Modules = filelib:wildcard(filename:join(?DOCPATH, "navidb*.html")),
     [Pre,Post] = base(["index.html" | Modules]),
