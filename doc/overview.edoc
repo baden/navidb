@@ -1,0 +1,27 @@
+@title NaviDB Application
+@author Denis Batrak <baden.i.ua@gmail.com>
+  [http://batrak.net/]
+@copyright 2012-2014 Denis Batrak (MIT License)
+
+@doc NaviDB is a library to be dropped into any other Erlang project,
+to be used to assist DevOps people diagnose problems in production
+nodes.
+
+The source code can be obtained from <a href="https://github.com/baden/navidb">the github repo</a>.
+
+Included modules are:
+
+<dl>
+    <dt>{@link navidb}</dt>
+    <dd>
+        Main module, contains basic functionality.
+    </dd>
+
+    <dt>{@link navidb_subs}</dt>
+    <dd>
+        Subscribe to resource changes.
+    </dd>
+
+</dl>
+
+@end

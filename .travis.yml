@@ -1,0 +1,12 @@
+language: erlang
+otp_release:
+  - 17.3
+  - 17.1
+  - 17.0
+script: "rm -rf deps ebin test/*.beam log logs Mnesia* && ./rebar get-deps compile && ./rebar ct"
+branches:
+  only:
+    - master
+notifications:
+  email:
+    - baden.i.ua@gmail.com

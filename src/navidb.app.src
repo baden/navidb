@@ -1,0 +1,21 @@
+{application, navidb, [
+    {description, ""},
+    {vsn, "1"},
+    {registered, []},
+    {applications, [
+                    kernel,
+                    stdlib,
+                    lager,
+                    mnesia,
+                    poolboy,
+                    mongodb
+                    ]},
+    {start_phases, [{init,[]}]},
+    {mod, { navidb_app, []}},
+    {env, [
+        {connect_pool, [
+            {size, 5},
+            {max_overflow, 10}
+        ]}
+    ]}
+]}.
