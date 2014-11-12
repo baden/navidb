@@ -1,7 +1,7 @@
 language: erlang
 otp_release:
   - 17.3
-script: "rm -rf deps ebin test/*.beam log logs Mnesia* && ./rebar get-deps compile && ./rebar ct skip_deps=true"
+script: "rm -rf deps ebin test/*.beam log logs Mnesia* && ./rebar get-deps compile && ./rebar ct skip_deps=true || cat logs/raw.log"
 branches:
   only:
     - master
