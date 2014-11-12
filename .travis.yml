@@ -8,3 +8,5 @@ branches:
 notifications:
   email:
     - baden.i.ua@gmail.com
+services:
+  - mongodb
