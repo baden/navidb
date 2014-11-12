@@ -72,6 +72,12 @@ test1(_) ->
     ?assertEqual({ready,5,0,0}, poolboy:status(navidb_mongo_pool)),
     timer:sleep(200),  % Ensure indexes was created
 
+    ok.
+
+
+%% @doc Test2
+%%
+test2(_) ->
     FakeUsername = <<"baden">>,
 
     ok = navidb:remove(accounts, {username, FakeUsername}),
@@ -97,6 +103,11 @@ test1(_) ->
     ?assertException(error, {badmatch, _Reason}, #{'_id' := _} = Res2),
     ?assertException(error, {badmatch, _Reason}, #{password := _} = Res2),
 
+    ok.
+
+test3(_) ->
+    ?LOG(" TODO: Test subscribes *********** Test3 ***********", []),
+    FakeUsername = <<"baden">>,
     % groups
     ?LOG("      Test subscribes", []),
     Self = self(),
@@ -147,13 +158,3 @@ listener(From, Id) ->
             ?LOG("      Listener timeoit", []),
             erlang:error(timeout)
     end.
-
-%% @doc Test2
-%%
-test2(_) ->
-    ?LOG("*********** Test2 ***********", []),
-    ok.
-
-test3(_) ->
-    ?LOG(" TODO: Test subscribes *********** Test3 ***********", []),
-    ok.
