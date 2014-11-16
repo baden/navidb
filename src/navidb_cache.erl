@@ -39,21 +39,15 @@ get_cached(Collection, {Field, Key}, Callback) ->
             MemDocument;
         {error, notfound} ->
             case navidb_mongodb:find_one(Collection, {Field, Key}) of
-                {error, no_entry} ->
+                #{error := no_entry} ->
                     NewDocument = Callback(),
-                    case Callback() of
-                        undefined ->
-                            undefined;
-                        NewDocument ->
-                            navidb_mongodb:insert(Collection, NewDocument),
-                            CahceDocument = navidb_mongodb:bson_to_json(NewDocument),
-                            put_(?MEMCACHE_TABLE, Id, CahceDocument),
-                            CahceDocument
-                    end;
+                    navidb_mongodb:insert(Collection, NewDocument),
+                    % CahceDocument = navidb_mongodb:bson_to_json(NewDocument),
+                    put_(?MEMCACHE_TABLE, Id, NewDocument),
+                    NewDocument;
                 DbDocument ->
-                    CahceDocument = navidb_mongodb:bson_to_json(DbDocument),
-                    put_(?MEMCACHE_TABLE, Id, CahceDocument),
-                    CahceDocument
+                    put_(?MEMCACHE_TABLE, Id, DbDocument),
+                    DbDocument
             end
     end;
 

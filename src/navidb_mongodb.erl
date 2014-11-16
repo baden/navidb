@@ -5,7 +5,7 @@
 -export([
         child_spec/0,
         insert/2,
-        update/3,
+        % update/3,
         update/4,
         delete/2,
         find_one/2,
@@ -33,8 +33,8 @@ child_spec() ->
 insert(Coll, Doc) ->
     bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
 
-update(Coll, Selector, Doc) ->
-    mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
+% update(Coll, Selector, Doc) ->
+%     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
 
 update(Coll, Selector, Doc, Upsert) ->
     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc), Upsert).
@@ -51,12 +51,15 @@ find_one(Coll, Selector) ->
 aggregate(Coll, Pipeline) ->
     Cmd = {
         aggregate, atom_to_binary(Coll, latin1),
-        pipeline, map_to_bson(Pipeline)
+        % pipeline, map_to_bson(Pipeline)
+        pipeline, Pipeline
     },
 
     % Original (not implemented yet)
     % Res = mongo_pool:command(?POOL_NAME, Cmd),
+    ct:pal("Cmd = ~p", [Cmd]),
     {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
+    ct:pal("Res = ~p", [Res]),
     _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
     bson_to_map(bson:at(result, Res)).
 
@@ -103,8 +106,20 @@ map_to_bson([]) ->
 
 % Для совместимости с прямым использованием bson в качестве Selector
 % TODO: Не хватает is_tuple, если полей больше одного.
+
+map_to_bson({bin, Value}) ->
+    {bin, bin, Value};
+
 map_to_bson({Key, Value}) ->
     {Key, map_to_bson(Value)};
+
+map_to_bson({bin, bin, Value}) ->
+    {bin, bin, Value};
+
+% map_to_bson(Value) when is_tuple(Value) ->
+%     List = tuple_to_list(Value),
+%     Parts
+%     Value.
 
 map_to_bson(Value) when is_list(Value) ->
     [map_to_bson(Each) || Each <- Value];
@@ -121,6 +136,12 @@ map_to_bson(Value) when is_map(Value) ->
 
 map_to_bson(Value) ->
     Value.
+
+% tokey('id') ->
+%     '_id';
+%
+% tokey(Key) ->
+%     Key.
 
 % id(Label) when is_binary(Label) ->
 %     binary:replace(Label, <<$#>>, <<$.>>, [global]);
@@ -156,6 +177,7 @@ bson_to_map_test() ->
     ?assertEqual(#{}, bson_to_map({})),
     ?assertEqual([], bson_to_map([])),
     ?assertEqual(#{a => 0}, bson_to_map({a, 0})),
+    ?assertEqual(#{a => null}, bson_to_map({a, undefined})),
     ?assertEqual(#{a => 0, b => 1}, bson_to_map({a, 0, b, 1})),
     ?assertEqual([#{a => 0, b => 1}], bson_to_map([{a, 0, b, 1}])),
     ?assertEqual(#{a => 0, b => #{c => 1}}, bson_to_map({a, 0, b, {c, 1}})),

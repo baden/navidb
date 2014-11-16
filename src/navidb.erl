@@ -66,8 +66,10 @@ get(command, Skey) ->
 % Protect from use map for Selector
 % get(_Collection, Selector) when is_map(Selector) ->
 %     erlang:error(badarg);
+get(Collection, Key) when is_binary(Key) ->
+    get(Collection, {'_id', Key});
 
-get(Collection, Selector) ->
+get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
     RawDoc = navidb_mongodb:find_one(collection_name(Collection), Selector),
     prepare_doc(Collection, RawDoc).
 
@@ -106,7 +108,7 @@ get(system, Skey, cached) ->
             [ImeiOnly | _LastImei] = string:tokens(SImei, "-"),     % Выделим только IMEI, без кода
             LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
 
-            Document = #{
+            #{
                 '_id'   => Skey,
                 imei    => Imei,                                % IMEI
                 date    => unixtime(),                          % Дата/время первого выхода на связь
@@ -127,8 +129,7 @@ get(system, Skey, cached) ->
                     % notranslate, false              % Если установлен в true, то трансляция данных на старый сервер не требуется
                     notranslate => true              % Если установлен в true, то трансляция данных на старый сервер не требуется
                 }
-            },
-            Document    % Документ будет сохранен в базу данных
+            }
         end
     ).
 
@@ -136,11 +137,25 @@ get(system, Skey, cached) ->
 update(Collection, Selector = {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), Selector, Document, true),
     navidb_subs:broadcast(name(Collection), Key, null),
-    navidb_cache:delete(Collection, Field, Key),
+    navidb_cache:delete(collection_name(Collection), Field, Key),
     Res;
 
-update(Collection, Key, Command) ->
-    update(Collection, {'_id', Key}, Command).
+% Important! Ignore other fields!
+update(Collection, #{'_id' := Key}, Document) ->
+    update(Collection, {'_id', Key}, Document);
+
+update(Collection, Selector, Document) when is_map(Selector)->
+    Fields = maps:keys(Selector),
+    case length(Fields) of
+        1 ->
+            update(Collection, {hd(Fields), maps:get(hd(Fields))}, Document);
+        _ ->
+            navidb_mongodb:update(collection_name(Collection), Selector, Document, true)
+            % erlang:error(badarg)
+    end;
+
+update(Collection, Key, Document) ->
+    update(Collection, {'_id', Key}, Document).
 
 set(Collection, {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), {Field, Key}, #{'$set' => Document}, true),
@@ -186,20 +201,21 @@ delete(command, Skey) ->
 
 % TODO: Не самое элегантное решение. Сделано пока абыкак.
 get_gps_hours(Skey, From, To) ->
-    Pipeline = #{
-        '$match' => #{
-            system => Skey,
-            hour   => #{
-                '$gte' => From,
-                '$lte' => To
+    % !!! Этo не может быть map, так как важен порядок сделования полей (недоработка mongoDB)
+    Pipeline = [
+        {'$match', {
+            system, Skey,
+            hour, {
+                '$gte', From,
+                '$lte', To
             }
-        },
-        '$group' => #{
-            '_id' => 0, hours => #{
-                '$addToSet' => <<"$hour">>
+        }},
+        {'$group', {
+            '_id', 0, hours, {
+                '$addToSet', <<"$hour">>
             }
-        }
-    },
+        }}
+    ],
     Hours = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
         [] ->
             [];
@@ -240,8 +256,10 @@ get_geos(Skey, From, To) ->
     Flat = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
         [] ->
             <<"">>;
-        [Doc] ->
-            Datas = lists:flatten(bson:at(data, Doc)),
+        [#{data := RawData}] ->
+            % Datas = lists:flatten(bson:at(data, Doc)),
+            % Data
+            Datas = lists:flatten(RawData),
             lists:foldl(
                 fun ({bin, bin, Data}, Acc) ->
                     <<Acc/binary, Data/binary>> %[Data | Acc]
@@ -260,10 +278,10 @@ get_geos(Skey, From, To) ->
 
 get_all_systems() ->
     Pipeline = [
-        #{'$project' => #{
-            '_id' => 1, imei => 1, date => 1, hwid => 1, swid => 1
+        {'$project', {
+            '_id', 1, imei, 1, date, 1, hwid, 1, swid, 1
         }},
-        #{'$sort' => #{date => 1}}
+        {'$sort', {date, 1}}
     ],
     navidb_mongodb:aggregate(collection_name(systems), Pipeline).
     % case navidb_mongodb:aggregate(collection_name(systems), Pipeline) of

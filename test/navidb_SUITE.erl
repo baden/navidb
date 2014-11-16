@@ -102,6 +102,7 @@ test3(_) ->
     Self = self(),
     Listener = spawn(fun() -> listener(Self, FakeUsername) end),
     navidb_subs:watch(Listener),
+    ?assertEqual({ok, [Listener]}, navidb_subs:pids()),
     Resource = #{<<"resource">> => <<"account">>, <<"id">> => FakeUsername},
     Keys = [tokey(Resource)],
     navidb_subs:subscribe(Listener, Keys),
