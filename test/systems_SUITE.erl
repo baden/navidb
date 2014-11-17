@@ -4,7 +4,7 @@
 
 -compile(export_all).
 
-all() -> [insert_get, update, dynamic, command, system_cached].
+all() -> [insert_get, update, dynamic, command, system_cached, logs].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
@@ -55,6 +55,11 @@ update(_) ->
     % navidb:update(systems, {'_id', Skey}, #{'$set' => #{foo => <<"bar">>}}),
     navidb:update(systems, #{'_id' => Skey}, #{'$set' => #{foo => <<"bar">>}}),
     ?assertMatch(#{foo := <<"bar">>}, navidb:get(systems, {'_id', Skey})),
+
+    Record = #{'value' => 10, 'dt' => 0},
+    navidb:update(systems, Skey, #{'$set' => #{'balance' => Record}}),
+    ?assertMatch(#{balance := Record}, navidb:get(systems, {'_id', Skey})),
+
     navidb:remove(systems, #{'_id' => Skey}),
     ok.
 
@@ -80,6 +85,9 @@ command(_) ->
     ?assertMatch({ok, Command}, navidb:get(command, Skey)),
     ?assertMatch({error, notfound}, navidb:get(command, <<"fake-key-02">>)),
 
+    navidb:delete(command, Skey),
+    ?assertMatch({error, notfound}, navidb:get(command, <<"fake-key-01">>)),
+
     ok.
 
 system_cached(_) ->
@@ -104,4 +112,21 @@ system_cached(_) ->
     % find_one(Coll, Selector)
     % meck:unload(navidb_mongodb),
     navidb:remove(systems, #{'_id' => Skey}),
+    ok.
+
+logs(_) ->
+    #{'_id' := Skey} = helper:fake_system(),
+    Text = <<"Log text">>,
+    Document = #{
+        'system' => Skey,
+        'dt'     => helper:unixtime(),
+        'text'   => Text
+    },
+    navidb:insert(logs, Document),
+    Skip  = 100000000000,
+    Count = 20,
+    [Doc] = navidb:get_logs(Skey, Count, Skip),
+    ct:pal("Docs = ~p", [Doc]),
+    ?assertMatch(#{system := Skey, text := Text}, Doc),
+
     ok.

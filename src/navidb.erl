@@ -148,7 +148,7 @@ update(Collection, Selector, Document) when is_map(Selector)->
     Fields = maps:keys(Selector),
     case length(Fields) of
         1 ->
-            update(Collection, {hd(Fields), maps:get(hd(Fields))}, Document);
+            update(Collection, {hd(Fields), maps:get(hd(Fields), Selector)}, Document);
         _ ->
             navidb_mongodb:update(collection_name(Collection), Selector, Document, true)
             % erlang:error(badarg)
@@ -257,16 +257,18 @@ get_geos(Skey, From, To) ->
         [] ->
             <<"">>;
         [#{data := RawData}] ->
-            % Datas = lists:flatten(bson:at(data, Doc)),
-            % Data
-            Datas = lists:flatten(RawData),
-            lists:foldl(
-                fun ({bin, bin, Data}, Acc) ->
-                    <<Acc/binary, Data/binary>> %[Data | Acc]
-                end,
-                <<>>,
-                Datas
-            )
+            list_to_binary(RawData)
+            % ct:pal("RawData = ~p", [RawData]),
+            % % Datas = lists:flatten(bson:at(data, Doc)),
+            % % Data
+            % Datas = lists:flatten(RawData),
+            % lists:foldl(
+            %     fun ({bin, bin, Data}, Acc) ->
+            %         <<Acc/binary, Data/binary>> %[Data | Acc]
+            %     end,
+            %     <<>>,
+            %     Datas
+            % )
     end,
 
     case navidb_gpsdb:get(Skey) of

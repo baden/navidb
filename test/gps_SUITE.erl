@@ -4,7 +4,7 @@
 
 -compile(export_all).
 
-all() -> [test1].
+all() -> [test1, remove].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
@@ -21,16 +21,44 @@ end_per_suite(Config) ->
     error_logger:tty(true),
     ok.
 
-test1(_) ->
+init_per_testcase(_Case, Config) ->
     #{'_id' := Skey} = _System = helper:fake_system(),
+	[{skey, Skey} | Config].
+
+end_per_testcase(_Case, Config) ->
+    Skey = ?config(skey, Config),
+    navidb:remove(systems, #{'_id' => Skey}),
+	ok.
+
+test1(Config) ->
+    Skey = ?config(skey, Config),
+    ok = navidb_gpsdb:save(Skey, 10, <<"fake-data1">>),
+    ok = navidb_gpsdb:save(Skey, 10, <<"fake-data2">>),
+    ok = navidb_gpsdb:save(Skey, 11, <<"fake-data3">>),
+    % navidb_gpsdb:flush(Skey),
+    ?assertMatch([10, 11], lists:sort(navidb:get_gps_hours(Skey, 0, 20))),
+    {ok, Geos} = navidb:get_geos(Skey, 0, 20),
+    ct:pal("Geos = ~p", [Geos]),
+    ?assertMatch(<<"fake-data1", "fake-data2", "fake-data3">>, Geos),
+    ok.
+
+remove(Config) ->
+    Skey = ?config(skey, Config),
 
     Hour = 10,
     Data = <<"fake-data">>,
-    Res1 = navidb_gpsdb:save(Skey, Hour, Data),
-    ct:pal("Res1 = ~p", [Res1]),
-    navidb_gpsdb:flush(Skey),
-    Hours = navidb:get_gps_hours(Skey, 0, 20),
-    ct:pal("Hours = ~p", [Hours]),
+    ok = navidb_gpsdb:save(Skey, Hour, Data),
+    [10] = navidb:get_gps_hours(Skey, 0, 20),
 
-    navidb:remove(systems, #{'_id' => Skey}),
+    Selector = #{
+        'system' => Skey,
+        'hour' => #{
+            '$gte' => 9,
+            '$lte' => 11
+        }
+    },
+    navidb:remove(gps, Selector, {flush, {gps, Skey}}),
+
+    [] = navidb:get_gps_hours(Skey, 0, 20),
+
     ok.

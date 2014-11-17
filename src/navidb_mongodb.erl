@@ -57,9 +57,9 @@ aggregate(Coll, Pipeline) ->
 
     % Original (not implemented yet)
     % Res = mongo_pool:command(?POOL_NAME, Cmd),
-    ct:pal("Cmd = ~p", [Cmd]),
+    % ct:pal("Cmd = ~p", [Cmd]),
     {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
-    ct:pal("Res = ~p", [Res]),
+    % ct:pal("Res = ~p", [Res]),
     _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
     bson_to_map(bson:at(result, Res)).
 

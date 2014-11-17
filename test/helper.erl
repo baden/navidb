@@ -1,11 +1,30 @@
 -module(helper).
 
 -export([
+        fake_account/0,
+        fake_account/1,
         fake_system/0,
         fake_system/1,
         random_string/0,
         unixtime/0
 ]).
+
+fake_account() ->
+    fake_account(random_string()).
+
+fake_account(Username) when is_binary(Username) ->
+    Salt = random:uniform(trunc(math:pow(2,64))),
+    Email = <<(random_string())/binary, "@", (random_string())/binary>>,
+    #{
+        id       => base64:encode(<<Username/binary, $:, Salt:64>>),
+        username => Username,
+        password => random_string(),
+        title    => Username,
+        email    => Email,
+        date     => unixtime(),
+        skeys    => [],
+        groups   => []
+    }.
 
 fake_system() ->
     fake_system(random_string()).
