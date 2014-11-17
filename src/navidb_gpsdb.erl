@@ -14,7 +14,8 @@
     stop/0,
     save/3,
     flush/1,
-    get/1
+    get/1,
+    info/0
 ]).
 
 
@@ -114,6 +115,26 @@ get(Skey) ->
             {ok, Record#memrecord.hour, Record#memrecord.data}
     end.
 
+-include_lib("stdlib/include/qlc.hrl").
+%% @doc Insert document
+%
+-spec info() -> map().
+info() ->
+    % List = mnesia:dirty_all_keys(memrecord),
+    % Data = mnesia:dirty_match_object(memrecord, #memrecord{_ = '_'}),
+    Q = qlc:q([{X#memrecord.skey, #{hour => X#memrecord.hour, data_length => size(X#memrecord.data)}} || X <- mnesia:table(memrecord)]),
+    % ct:pal("Q=~p", [Q]),
+    maps:from_list(do(Q)).
+
+do(Q) ->
+    F = fun() -> qlc:e(Q) end,
+    case mnesia:transaction (F) of
+        {atomic, Val} ->
+            Val;
+        {aborted, Reason} ->
+            lager:warning("Query: ~w aborted.  Reason: ~w", [Q, Reason]),
+            []
+    end.
 
 %% ===================================================================
 %% gen_server callbacks

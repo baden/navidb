@@ -35,11 +35,24 @@ test1(Config) ->
     ok = navidb_gpsdb:save(Skey, 10, <<"fake-data1">>),
     ok = navidb_gpsdb:save(Skey, 10, <<"fake-data2">>),
     ok = navidb_gpsdb:save(Skey, 11, <<"fake-data3">>),
-    % navidb_gpsdb:flush(Skey),
+    ok = navidb_gpsdb:save(Skey, 11, <<"fake-data4">>),
     ?assertMatch([10, 11], lists:sort(navidb:get_gps_hours(Skey, 0, 20))),
     {ok, Geos} = navidb:get_geos(Skey, 0, 20),
     ct:pal("Geos = ~p", [Geos]),
-    ?assertMatch(<<"fake-data1", "fake-data2", "fake-data3">>, Geos),
+    ?assertMatch(<<"fake-data1", "fake-data2", "fake-data3", "fake-data4">>, Geos),
+    % Проверим что записи последнего часа (11) находятся в кеше.
+    Status = navidb_gpsdb:info(),
+    ct:pal("Status = ~p", [Status]),
+    Info = maps:get(Skey, Status),
+    ct:pal("  Info = ~p", [Info]),
+    ?assertMatch(#{hour := 11, data_length := 20}, Info),
+    % Сбросим кеш
+    navidb_gpsdb:flush(Skey),
+    Status1 = navidb_gpsdb:info(),
+    ct:pal("Status1 = ~p", [Status1]),
+    ?assertException(error, bad_key, maps:get(Skey, Status1)),
+    % ct:pal("  Info1 = ~p", [Info1]),
+    % ?assertMatch(#{hour := 11, data_length := 20}, Info),
     ok.
 
 remove(Config) ->
