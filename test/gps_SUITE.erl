@@ -4,7 +4,7 @@
 
 -compile(export_all).
 
-all() -> [test1, remove].
+all() -> [test1, test2, remove].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
@@ -42,17 +42,42 @@ test1(Config) ->
     ?assertMatch(<<"fake-data1", "fake-data2", "fake-data3", "fake-data4">>, Geos),
     % Проверим что записи последнего часа (11) находятся в кеше.
     Status = navidb_gpsdb:info(),
-    ct:pal("Status = ~p", [Status]),
+    % ct:pal("Status = ~p", [Status]),
     Info = maps:get(Skey, Status),
-    ct:pal("  Info = ~p", [Info]),
+    % ct:pal("  Info = ~p", [Info]),
     ?assertMatch(#{hour := 11, data_length := 20}, Info),
     % Сбросим кеш
     navidb_gpsdb:flush(Skey),
     Status1 = navidb_gpsdb:info(),
-    ct:pal("Status1 = ~p", [Status1]),
+    % ct:pal("Status1 = ~p", [Status1]),
     ?assertException(error, bad_key, maps:get(Skey, Status1)),
     % ct:pal("  Info1 = ~p", [Info1]),
     % ?assertMatch(#{hour := 11, data_length := 20}, Info),
+    ok.
+
+test2(Config) ->
+
+    #{'_id' := Skey1} = helper:fake_system(),
+    #{'_id' := Skey2} = helper:fake_system(),
+    #{'_id' := Skey3} = helper:fake_system(),
+
+    ok = navidb_gpsdb:save(Skey1, 10, <<"fake-data1">>),
+    ok = navidb_gpsdb:save(Skey2, 10, <<"fake-data2">>),
+    ok = navidb_gpsdb:save(Skey3, 10, <<"fake-data3">>),
+
+    {ok, 10, <<"fake-data1">>} = navidb_gpsdb:get(Skey1),
+    {ok, 10, <<"fake-data2">>} = navidb_gpsdb:get(Skey2),
+    {ok, 10, <<"fake-data3">>} = navidb_gpsdb:get(Skey3),
+
+    navidb_gpsdb:flush(all),
+
+    nodata = navidb_gpsdb:get(Skey1),
+    nodata = navidb_gpsdb:get(Skey2),
+    nodata = navidb_gpsdb:get(Skey3),
+
+    navidb:remove(systems, #{'_id' => Skey1}),
+    navidb:remove(systems, #{'_id' => Skey2}),
+    navidb:remove(systems, #{'_id' => Skey3}),
     ok.
 
 remove(Config) ->
