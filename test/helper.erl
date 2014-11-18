@@ -60,4 +60,6 @@ fake_system(Imei) when is_binary(Imei) ->
 random_string() ->
     base64:encode(crypto:rand_bytes(16)).
 
-unixtime() -> timer:now_diff(now(), {0,0,0}) div 1000000.
+unixtime() ->
+        {A, B, _} = os:timestamp(),
+        (A * 1000000) + B.

@@ -313,4 +313,6 @@ name(logs) -> log;
 name(gps) -> gps.
 % name(_) -> unknown.
 
-unixtime() -> timer:now_diff(now(), {0,0,0}) div 1000000.
+unixtime() ->
+        {A, B, _} = os:timestamp(),
+        (A * 1000000) + B.
