@@ -35,7 +35,7 @@ fake_system(Imei) when is_binary(Imei) ->
     [ImeiOnly | _LastImei] = string:tokens(SImei, "-"),     % Выделим только IMEI, без кода
     LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
     #{
-        '_id'   => Skey,
+        id      => Skey,
         imei    => Imei,                                % IMEI
         date    => unixtime(),                          % Дата/время первого выхода на связь
         phone   => <<>>,                                % Номер SIM-карты

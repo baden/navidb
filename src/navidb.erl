@@ -42,7 +42,7 @@ get(Collection, Keys) when is_list(Keys) ->
 
     lists:reverse(lists:foldl(
         fun(Key, Acc) ->
-            Record = case navidb_mongodb:find_one(collection_name(Collection), #{'_id' => Key}) of
+            Record = case navidb_mongodb:find_one(collection_name(Collection), #{id => Key}) of
                 #{error := no_entry} ->    % Записи о системе еще нет.
                     #{
                         id    => Key,
@@ -67,7 +67,7 @@ get(command, Skey) ->
 % get(_Collection, Selector) when is_map(Selector) ->
 %     erlang:error(badarg);
 get(Collection, Key) when is_binary(Key) ->
-    get(Collection, {'_id', Key});
+    get(Collection, {id, Key});
 
 get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
     RawDoc = navidb_mongodb:find_one(collection_name(Collection), Selector),
@@ -136,7 +136,7 @@ get(system, Skey, cached) ->
             LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
 
             #{
-                '_id'   => Skey,
+                id      => Skey,
                 imei    => Imei,                                % IMEI
                 date    => unixtime(),                          % Дата/время первого выхода на связь
                 phone   => <<>>,                                % Номер SIM-карты
@@ -168,8 +168,8 @@ update(Collection, Selector = {Field, Key}, Document) ->
     Res;
 
 % Important! Ignore other fields!
-update(Collection, #{'_id' := Key}, Document) ->
-    update(Collection, {'_id', Key}, Document);
+update(Collection, #{id := Key}, Document) ->
+    update(Collection, {id, Key}, Document);
 
 update(Collection, Selector, Document) when is_map(Selector)->
     Fields = maps:keys(Selector),
@@ -182,7 +182,7 @@ update(Collection, Selector, Document) when is_map(Selector)->
     end;
 
 update(Collection, Key, Document) ->
-    update(Collection, {'_id', Key}, Document).
+    update(Collection, {id, Key}, Document).
 
 set(Collection, {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), {Field, Key}, #{'$set' => Document}, true),
@@ -198,7 +198,7 @@ set(command, Skey, Data) ->
     navidb_cache:put(command, Skey, Data);
 
 set(Collection, Key, Document) ->
-    set(Collection, {'_id', Key}, Document).
+    set(Collection, {id, Key}, Document).
 
 remove(Collection, Selector, {flush, {gps, Skey}}) ->
     navidb_gpsdb:flush(Skey),

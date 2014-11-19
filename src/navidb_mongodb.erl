@@ -84,7 +84,9 @@ bson_to_map(Document) when is_tuple(Document) ->
     bson:doc_foldl(fun
         ('_id', {Value}, Acc) ->   % автоматически oid
             Acc#{id => base64:encode(Value)};
-        ('_id', Value, Acc) ->     % ручной id
+        (<<"_id">>, {Value}, Acc) ->   % автоматически oid
+            Acc#{id => base64:encode(Value)};
+        (<<"_id">>, Value, Acc) ->     % ручной id
             Acc#{id => Value};
         (Label, Value, Acc) ->
             % maps:put(id(Label), bson_to_map(Value), Acc)
@@ -94,14 +96,21 @@ bson_to_map(Document) when is_tuple(Document) ->
         Document
     );
 
-bson_to_map(undefined)->
+bson_to_map(undefined) ->
     null;
 
-bson_to_map(Value)->
+bson_to_map(Value) ->
     Value.
+
+key_from_db('_id') ->  % Подозреваю что это никогда не вызывается
+    id;
 
 key_from_db(Key) when is_atom(Key) ->
     key_from_db(atom_to_binary(Key, utf8));
+
+key_from_db(<<"_id">>) ->  % Подозреваю что это никогда не вызывается
+    id;
+
 key_from_db(Key) when is_binary(Key) ->
     binary_to_atom(binary:replace(Key, <<$#>>, <<$.>>, [global]), utf8).
 
@@ -142,42 +151,17 @@ map_to_bson(Value) when is_map(Value) ->
 map_to_bson(Value) ->
     Value.
 
+key_to_db(id) ->
+    <<"_id">>;
+
 key_to_db(Key) when is_atom(Key) ->
     key_to_db(atom_to_binary(Key, utf8));
 
+key_to_db(<<"id">>) ->
+    <<"_id">>;
+
 key_to_db(Key) when is_binary(Key) ->
     binary:replace(Key, <<$.>>, <<$#>>, [global]).
-
-
-% tokey('id') ->
-%     '_id';
-%
-% tokey(Key) ->
-%     Key.
-
-% id(Label) when is_binary(Label) ->
-%     binary:replace(Label, <<$#>>, <<$.>>, [global]);
-%
-% id(Label) when is_atom(Label) ->
-%     Label.
-    % id(erlang:atom_to_binary(Label, utf8)).
-
-% proplist_to_doc([{}]) -> {};
-%
-% proplist_to_doc(In) when is_list(In) ->
-%     erlang:list_to_tuple(lists:flatten(lists:foldl(fun
-%         ({Key, Value}, Acc) ->
-%             [[tokey(Key), Value] | Acc]
-%         end,
-%         [],
-%         In
-%     ))).
-
-% tokey(Label) when is_binary(Label) ->
-%     binary:replace(Label, <<$.>>, <<$#>>, [global]);
-%
-% tokey(Label) when is_atom(Label) ->
-%     tokey(erlang:atom_to_binary(Label, utf8)).
 
 
 % Tests

@@ -11,7 +11,7 @@ ERLC_OPTS ?= -Werror +debug_info +warn_export_all +warn_export_vars \
 
 # Dependencies error in erlang.mk?
 # CT_OPTS += -pa test -erl_args -config test/test.config -pa deps/mongodb/deps/*/ebin
-CT_OPTS += -cover test/cover.spec -erl_args -config test/test.config -pa deps/mongodb/deps/*/ebin
+CT_OPTS += -cover test/cover.spec -erl_args -config test/test.config
 PLT_APPS = crypto public_key ssl
 
 # Dependencies.

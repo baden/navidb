@@ -52,7 +52,7 @@ get_cached(Collection, {Field, Key}, Callback) ->
     end;
 
 get_cached(Name, Key, Callback) ->
-    get_cached(Name, {'_id', Key}, Callback).
+    get_cached(Name, {id, Key}, Callback).
 
 
 

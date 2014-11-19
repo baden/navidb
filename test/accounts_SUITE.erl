@@ -30,21 +30,19 @@ end_per_testcase(_Case, Config) ->
 
 get(Config) ->
     Username = ?config(username, Config),
-    Res2 = navidb:get(accounts, {username, Username}, {filter, ['_id', 'password']}),
-    #{id := Id2} = Res2,     % Я не понимаю почему Id отличается от того, который назначен при insert
+    Res2 = navidb:get(accounts, {username, Username}, {filter, [id, 'password']}),
     ?assertMatch(#{
                     username := Username,
                     groups   := [],
                     skeys    := []
                 }, Res2),
-    ct:pal("      Id2 = ~p", [Id2]),
-    ?assertException(error, {badmatch, _Reason}, #{'_id' := _} = Res2),
+    ?assertException(error, {badmatch, _Reason}, #{id := _} = Res2),
     ?assertException(error, {badmatch, _Reason}, #{password := _} = Res2),
     ok.
 
 system(Config) ->
     Username = ?config(username, Config),
-    #{'_id' := Skey} = helper:fake_system(),
+    #{id := Skey} = helper:fake_system(),
     #{skeys := SkeysBefore} = navidb:get(accounts, {username, Username}),
     ?assertEqual(false, lists:member(Skey, SkeysBefore)),
     ok = navidb:update(accounts, #{username => Username}, {'$addToSet', {skeys, Skey}}),
