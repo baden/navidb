@@ -90,7 +90,8 @@ prepare_doc(params, Document = #{data := Data}) ->
     Filtered = maps:fold(
         fun(Name, #{type := Type, value := Value, default := Default}, Acc) ->
             maps:put(
-                type_to_repr(Name),
+                % type_to_repr(Name),
+                Name,
                 #{
                     type    => Type,
                     value   => remquotes(Value),
@@ -110,8 +111,8 @@ prepare_doc(_Collection, Document) ->
 remquotes(In) ->
     binary:replace(In, <<"\"">>, <<"">>, [global]).
 
-type_to_repr(Label) ->
-    binary:replace(atom_to_binary(Label, utf8), <<$#>>, <<$.>>, [global]).
+% type_to_repr(Label) ->
+%     binary:replace(atom_to_binary(Label, utf8), <<$#>>, <<$.>>, [global]).
 
 % Получим запись о трекере и если таковой нет, то создадим ее.
 

@@ -156,13 +156,13 @@ config(_) ->
     ct:pal("Data = ~p", [Data]),
     ?assertMatch(
         #{
-            <<"akkum.U.3">> := #{
+            'akkum.U.3' := #{
                 default := <<"984">>, type := <<"INT">>, value := <<"984">>
             },
-            <<"gps.V0.3">> := #{
+            'gps.V0.3' := #{
                 default := <<"20">>, type := <<"INT">>, value := <<"20">>
             },
-            <<"gsm.server">> := #{
+            'gsm.server' := #{
                 default := <<"map.navi.cc">>,
                 type := <<"STR32">>,
                 value := <<"point.new.navi.cc">>
