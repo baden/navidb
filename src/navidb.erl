@@ -84,8 +84,34 @@ prepare_doc(systems, Document = #{id := Skey}) ->
         _ -> Document
     end;
 
+prepare_doc(params, Document = #{data := Data}) ->
+    % Я лоханулся. Требуется отфильтровать двойные кавычки
+    % Это бып сделать на этапе парсинга в navipoint_config
+    Filtered = maps:fold(
+        fun(Name, #{type := Type, value := Value, default := Default}, Acc) ->
+            maps:put(
+                type_to_repr(Name),
+                #{
+                    type    => Type,
+                    value   => remquotes(Value),
+                    default => remquotes(Default)
+                },
+                Acc
+            )
+        end,
+        #{},
+        Data
+    ),
+    Document#{data := Filtered};
+
 prepare_doc(_Collection, Document) ->
     Document.
+
+remquotes(In) ->
+    binary:replace(In, <<"\"">>, <<"">>, [global]).
+
+type_to_repr(Label) ->
+    binary:replace(atom_to_binary(Label, utf8), <<$#>>, <<$.>>, [global]).
 
 % Получим запись о трекере и если таковой нет, то создадим ее.
 

@@ -88,7 +88,7 @@ bson_to_map(Document) when is_tuple(Document) ->
             Acc#{id => Value};
         (Label, Value, Acc) ->
             % maps:put(id(Label), bson_to_map(Value), Acc)
-            maps:put(Label, bson_to_map(Value), Acc)
+            maps:put(key_from_db(Label), bson_to_map(Value), Acc)
         end,
         #{},
         Document
@@ -99,6 +99,11 @@ bson_to_map(undefined)->
 
 bson_to_map(Value)->
     Value.
+
+key_from_db(Key) when is_atom(Key) ->
+    key_from_db(atom_to_binary(Key, utf8));
+key_from_db(Key) when is_binary(Key) ->
+    binary_to_atom(binary:replace(Key, <<$#>>, <<$.>>, [global]), utf8).
 
 % Преобразование значения, полученного из jsxn:decode в bson:document()
 map_to_bson([]) ->
@@ -111,7 +116,7 @@ map_to_bson({bin, Value}) ->
     {bin, bin, Value};
 
 map_to_bson({Key, Value}) ->
-    {Key, map_to_bson(Value)};
+    {key_to_db(Key), map_to_bson(Value)};
 
 map_to_bson({bin, bin, Value}) ->
     {bin, bin, Value};
@@ -128,7 +133,7 @@ map_to_bson(Value) when is_map(Value) ->
     erlang:list_to_tuple(maps:fold(
         fun (Key, Item, Acc) ->
             % [tokey(Key)] ++ [map_to_bson(Item)] ++ Acc
-            [Key, map_to_bson(Item)] ++ Acc
+            [key_to_db(Key), map_to_bson(Item)] ++ Acc
         end,
         [],
         Value
@@ -136,6 +141,13 @@ map_to_bson(Value) when is_map(Value) ->
 
 map_to_bson(Value) ->
     Value.
+
+key_to_db(Key) when is_atom(Key) ->
+    key_to_db(atom_to_binary(Key, utf8));
+
+key_to_db(Key) when is_binary(Key) ->
+    binary:replace(Key, <<$.>>, <<$#>>, [global]).
+
 
 % tokey('id') ->
 %     '_id';
@@ -190,20 +202,22 @@ map_to_bson_test() ->
     ?debugFmt("*********** Test map_to_bson", []),
     ?assertEqual({}, map_to_bson(#{})),
     ?assertEqual([], map_to_bson([])),
-    ?assertEqual({a, 0}, map_to_bson(#{a => 0})),
+    ?assertEqual({<<"a">>, 0}, map_to_bson(#{a => 0})),
+    ?assertEqual({<<"a#b">>, 0}, map_to_bson(#{'a.b' => 0})),
+    ?assertEqual({<<"a#b">>, 0}, map_to_bson(#{<<"a.b">> => 0})),
     ?assertEqual(
         true,
         case map_to_bson(#{a => 0, b => 1}) of
-            {a, 0, b, 1} -> true;
-            {b, 1, a, 0} -> true;
+            {<<"a">>, 0, <<"b">>, 1} -> true;
+            {<<"b">>, 1, <<"a">>, 0} -> true;
             _            -> false
         end
     ),
     ?assertEqual(
         true,
         case map_to_bson(#{a => 0, b => #{c => 1}}) of
-            {a, 0, b, {c, 1}} -> true;
-            {b, {c, 1}, a, 0} -> true;
+            {<<"a">>, 0, <<"b">>, {<<"c">>, 1}} -> true;
+            {<<"b">>, {<<"c">>, 1}, <<"a">>, 0} -> true;
             _                 -> false
         end
     ),

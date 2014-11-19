@@ -4,7 +4,7 @@
 
 -compile(export_all).
 
-all() -> [insert_get, update, dynamic, command, system_cached, logs].
+all() -> [insert_get, update, dynamic, command, system_cached, logs, config].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
@@ -25,8 +25,8 @@ end_per_suite(Config) ->
 insert_get(_) ->
     #{'_id' := Skey1} = System1 = helper:fake_system(),
     #{'_id' := Skey2} = System2 = helper:fake_system(),
-    #{id := Skey1} = navidb:insert(systems, System1),
-    #{id := Skey2} = navidb:insert(systems, System2),
+    #{'_id' := Skey1} = navidb:insert(systems, System1),
+    #{'_id' := Skey2} = navidb:insert(systems, System2),
     [Sys1, Sys2] = navidb:get(systems, [Skey1, Skey2]),
     ?assertMatch(#{id := Skey1}, Sys1),
     ?assertMatch(#{id := Skey2}, Sys2),
@@ -128,5 +128,50 @@ logs(_) ->
     [Doc] = navidb:get_logs(Skey, Count, Skip),
     ct:pal("Docs = ~p", [Doc]),
     ?assertMatch(#{system := Skey, text := Text}, Doc),
+
+    ok.
+
+config(_) ->
+    #{'_id' := Skey} = helper:fake_system(),
+    Parced = #{
+		<<"gsm.server">> => #{
+			value  => <<"point.new.navi.cc">>,
+			type    => <<"STR32">>,
+			default => <<"map.navi.cc">>
+		},
+		<<"gps.V0.3">> => #{
+			value   => <<"20">>,
+			type    => <<"INT">>,
+			default => <<"20">>
+		},
+		<<"akkum.U.3">> => #{
+			value   => <<"984">>,
+			type    => <<"INT">>,
+			default => <<"984">>
+		}
+	},
+    navidb:set(params, Skey, #{data => Parced}),
+
+    #{data := Data} = navidb:get(params, {'_id', Skey}),
+    ct:pal("Data = ~p", [Data]),
+    ?assertMatch(
+        #{
+            <<"akkum.U.3">> := #{
+                default := <<"984">>, type := <<"INT">>, value := <<"984">>
+            },
+            <<"gps.V0.3">> := #{
+                default := <<"20">>, type := <<"INT">>, value := <<"20">>
+            },
+            <<"gsm.server">> := #{
+                default := <<"map.navi.cc">>,
+                type := <<"STR32">>,
+                value := <<"point.new.navi.cc">>
+            }
+        },
+        Data
+    ),
+
+    #{'_id' := Skey2} = helper:fake_system(),
+    #{error := no_entry} = navidb:get(params, {'_id', Skey2}),
 
     ok.
