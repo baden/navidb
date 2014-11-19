@@ -12,3 +12,4 @@ test/*.beam
 test/Mnesia*
 Mnesia*
 site/*.html
+.erlang.mk.packages.*

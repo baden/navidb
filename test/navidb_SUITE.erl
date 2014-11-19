@@ -18,7 +18,6 @@ end_per_suite(Config) ->
     Modules = ?config(modules, Config),
     [application:stop(Module) || Module <- lists:reverse(Modules)],
     application:unload(navidb),
-    % meck:unload(),
     error_logger:tty(true),
     ok.
 

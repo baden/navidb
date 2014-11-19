@@ -108,8 +108,8 @@ handle_call({resources, Pid}, _From, #state{resources = Resources} = State) ->
     {reply, {ok, Keys}, State};
 
 handle_call(Request, _From, State) ->
-    lager:error("Unimplemented navidb_subs:handle_call (~w)", [Request]),
-    {reply, ok, State}.
+    error_logger:warning_msg("Unimplemented navidb_subs:handle_call (~p)~n", [Request]),
+    {reply, ignored, State}.
 
 % Async
 
@@ -127,7 +127,7 @@ handle_cast({broadcast, Message}, #state{pool=Pool, pids=_Pids} = State) ->
     {noreply, State#state{pool = [Message] ++ Pool}};
 
 handle_cast(Msg, State) ->
-    lager:error("Unimplemented navidb_subs:handle_cast(~w)", [Msg]),
+    error_logger:warning_msg("Unimplemented navidb_subs:handle_cast(~p)~n", [Msg]),
     {noreply, State}.
 
 % Messages
@@ -143,8 +143,6 @@ handle_info(pool, #state{pool=Pool, subscribes = Subscribes} = State) ->
     Messages = dict:to_list(lists:foldl(
         fun (M, Acc) ->
             % Добавим сообщение M всем слушателям
-            % lager:warning("   ----        M = ~p", [M]),
-            % lager:warning("   ---- tokey(M) = ~p", [tokey(M)]),
             Pids = [Pid || {_, Pid} <- ets:lookup(Subscribes, tokey(M))],
             lists:foldl(
                 fun (Pid, Acc2) ->
@@ -177,7 +175,7 @@ handle_info({'EXIT', Pid, _Why}, #state{pids = Pids, subscribes = Subscribes, re
     {noreply, State#state{pids = lists:delete(Pid, Pids)}};
 
 handle_info(Info, State) ->
-    lager:error("Caught unhandled navidb_subs:handle_info: ~w", [Info]),
+    error_logger:warning_msg("Caught unhandled navidb_subs:handle_info: ~p~n", [Info]),
     {noreply, State}.
 
 terminate(_Reason, _State) ->

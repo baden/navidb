@@ -138,8 +138,7 @@ do(Q) ->
     case mnesia:transaction (F) of
         {atomic, Val} ->
             Val;
-        {aborted, Reason} ->
-            lager:warning("Query: ~w aborted.  Reason: ~w", [Q, Reason]),
+        {aborted, _Reason} ->
             []
     end.
 
@@ -187,27 +186,14 @@ initmembase() ->
     mnesia:stop(),
     case mnesia:create_schema([Node]) of
         ok ->
-            % ?INFO("Mnesia schema created at ~p", [Node]);
             ok;
         {error, {Node, {already_exists, Node}}} ->
-            % ?INFO("Mnesia schema already exist at ~p", [Node]),
             ok
     end,
     ok = mnesia:start(),
-    case mnesia:create_table(memrecord,
-        [
+    mnesia:create_table(memrecord, [
             {disc_copies, [Node]},
             {type, set},
             {attributes, record_info(fields, memrecord)}
-    ]) of
-        {atomic, ok} ->
-            % ?INFO("Table androidinfo created at ~p", [Node]);
-            ok;
-        {aborted, {already_exists, memrecord}} ->
-            % ?INFO("Table androidinfo already exist ~p", [Node]),
-            ok;
-        Any ->
-            lager:error("Error create table at ~p (~p)", [Node, Any])
-    end,
-
+    ]),
     ok.

@@ -1,11 +1,12 @@
 {application, navidb, [
     {description, ""},
     {vsn, "1"},
+    {id, "git"},
+    {modules, []},
     {registered, []},
     {applications, [
                     kernel,
                     stdlib,
-                    lager,
                     mnesia,
                     poolboy,
                     mongodb

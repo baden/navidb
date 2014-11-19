@@ -9,14 +9,12 @@ all() -> [get, system].
 init_per_suite(Config) ->
     error_logger:tty(false),
     {ok, Modules} = application:ensure_all_started(navidb),
-    % meck:new(navidb_mongodb, [non_strict]),
     [{modules, Modules} | Config].
 
 end_per_suite(Config) ->
     Modules = ?config(modules, Config),
     [application:stop(Module) || Module <- lists:reverse(Modules)],
     application:unload(navidb),
-    meck:unload(),
     error_logger:tty(true),
     ok.
 
