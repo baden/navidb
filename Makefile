@@ -37,3 +37,7 @@ include erlang.mk
 # Also dialyze the tests.
 
 # DIALYZER_OPTS += --src -r test
+
+test-shell: app
+	erl -pa ebin -pa deps/*/ebin -pa test -s navipoint -config test/test.config
+	# erl -pa ebin -pa deps/*/ebin -pa test -s sync -s navipoint -config test/test.config

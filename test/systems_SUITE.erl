@@ -26,8 +26,8 @@ insert_get(_) ->
     ct:pal(" System2 = ~p", [System2]),
     System1a = navidb:insert(systems, System1),
     System2a = navidb:insert(systems, System2),
-    ct:pal(" System1a = ~p", [System1]),
-    ct:pal(" System2a = ~p", [System2]),
+    ct:pal(" System1a = ~p", [System1a]),
+    ct:pal(" System2a = ~p", [System2a]),
 
     [Sys1, Sys2] = navidb:get(systems, [Skey1, Skey2]),
     ct:pal(" Sys1 = ~p", [Sys1]),
