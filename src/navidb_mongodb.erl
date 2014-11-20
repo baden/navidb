@@ -31,7 +31,12 @@ child_spec() ->
     mongo_pool:child_spec(?POOL_NAME, PoolSize, Server, Port, Database, MaxOverflow).
 
 insert(Coll, Doc) ->
-    bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
+    % bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
+    DocBson = map_to_bson(Doc),
+    ct:pal("DocBson = ~p", [DocBson]),
+    DocBsona = mongo_pool:insert(?POOL_NAME, Coll, DocBson),
+    ct:pal("DocBsona = ~p", [DocBsona]),
+    bson_to_map(DocBsona).
 
 % update(Coll, Selector, Doc) ->
 %     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
