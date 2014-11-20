@@ -1,7 +1,7 @@
 language: erlang
 otp_release:
   - 17.3
-script: "make tests"
+script: "sleep 5 && make tests"
 branches:
   only:
     - master
