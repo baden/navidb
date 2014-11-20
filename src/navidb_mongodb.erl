@@ -155,6 +155,19 @@ key_to_db(id) ->
 key_to_db(Key) when is_atom(Key) ->
     key_to_db(atom_to_binary(Key, utf8));
 
+% Nested requests, like: data.{key}.value
+key_to_db(Keys) when is_list(Keys) ->
+    <<$., Rest/binary>> = lists:foldl(
+        fun
+            % (Key, Acc) when is_atom(Key) ->
+            %     <<Acc/binary, $., (atom_to_binary(Key, latin1))/binary>>;
+            (Key, Acc) ->
+                <<Acc/binary, $., (key_to_db(Key))/binary>>
+        end,
+        <<>>,
+        Keys),
+    Rest;
+
 key_to_db(<<"id">>) ->
     '_id';
 
@@ -201,6 +214,8 @@ map_to_bson_test() ->
             _                 -> false
         end
     ),
+    ?assertEqual({<<"data.a#b.value">>, 0}, map_to_bson(#{[data, <<"a.b">>, value] => 0})),
+
     done.
 
 toket_test() ->
