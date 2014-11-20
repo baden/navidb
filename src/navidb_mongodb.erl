@@ -157,13 +157,13 @@ map_to_bson(Value) ->
     Value.
 
 key_to_db(id) ->
-    <<"_id">>;
+    '_id';
 
 key_to_db(Key) when is_atom(Key) ->
     key_to_db(atom_to_binary(Key, utf8));
 
 key_to_db(<<"id">>) ->
-    <<"_id">>;
+    '_id';
 
 key_to_db(Key) when is_binary(Key) ->
     binary:replace(Key, <<$.>>, <<$#>>, [global]).
