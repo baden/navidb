@@ -21,16 +21,20 @@ end_per_suite(Config) ->
 
 insert_get(_) ->
     #{id := Skey1} = System1 = helper:fake_system(),
+    ct:pal(" System1 = ~p", [System1]),
     #{id := Skey2} = System2 = helper:fake_system(),
+    ct:pal(" System2 = ~p", [System2]),
     navidb:insert(systems, System1),
     navidb:insert(systems, System2),
 
     [Sys1, Sys2] = navidb:get(systems, [Skey1, Skey2]),
+    ct:pal(" Sys1 = ~p", [Sys1]),
+    ct:pal(" Sys2 = ~p", [Sys2]),
+
     ?assertMatch(#{id := Skey1}, Sys1),
     ?assertMatch(#{id := Skey2}, Sys2),
 
     % All = navidb:get_all_systems(),
-    % ct:pal(" Res2 = ~p", [All]),
 
     ?assertMatch([#{error := <<"no_entry">>}], navidb:get(systems, [<<"lost_id">>])),
     navidb:remove(systems, #{id => Skey1}),
