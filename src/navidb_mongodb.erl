@@ -31,12 +31,7 @@ child_spec() ->
     mongo_pool:child_spec(?POOL_NAME, PoolSize, Server, Port, Database, MaxOverflow).
 
 insert(Coll, Doc) ->
-    % bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
-    DocBson = map_to_bson(Doc),
-    ct:pal("DocBson = ~p", [DocBson]),
-    DocBsona = mongo_pool:insert(?POOL_NAME, Coll, DocBson),
-    ct:pal("DocBsona = ~p", [DocBsona]),
-    bson_to_map(DocBsona).
+    bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
 
 % update(Coll, Selector, Doc) ->
 %     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
@@ -62,9 +57,7 @@ aggregate(Coll, Pipeline) ->
 
     % Original (not implemented yet)
     % Res = mongo_pool:command(?POOL_NAME, Cmd),
-    % ct:pal("Cmd = ~p", [Cmd]),
     {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
-    % ct:pal("Res = ~p", [Res]),
     _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
     bson_to_map(bson:at(result, Res)).
 
@@ -174,7 +167,6 @@ key_to_db(Key) when is_binary(Key) ->
 -include_lib("eunit/include/eunit.hrl").
 
 bson_to_map_test() ->
-    ?debugFmt("*********** Test bson_to_map", []),
     ?assertEqual(#{}, bson_to_map({})),
     ?assertEqual([], bson_to_map([])),
     ?assertEqual(#{a => 0}, bson_to_map({a, 0})),
@@ -188,7 +180,6 @@ bson_to_map_test() ->
     done.
 
 map_to_bson_test() ->
-    ?debugFmt("*********** Test map_to_bson", []),
     ?assertEqual({}, map_to_bson(#{})),
     ?assertEqual([], map_to_bson([])),
     ?assertEqual({<<"a">>, 0}, map_to_bson(#{a => 0})),

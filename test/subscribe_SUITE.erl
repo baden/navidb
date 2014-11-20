@@ -51,7 +51,6 @@ tokey(#{<<"resource">> := Resource, <<"id">> := Id}) ->
 wait_echo(Resource, Id) ->
     receive
         {echo, Resource, Id, Doc} ->
-            ct:pal("      Echo Doc      = ~p", [Doc]),
             % ?assertMatch(#{resource := <<"account">>, id := Id, data := #{date := 1}}, M),
             Doc
     after 10000 ->
@@ -69,6 +68,5 @@ listener(From, Id) ->
             From ! {echo, Resource, Id, Data},
             listener(From, Id)
         after 5000 ->
-            ct:pal("      Listener timeoit", []),
             erlang:error(timeout)
     end.

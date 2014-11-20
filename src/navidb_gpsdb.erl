@@ -130,7 +130,6 @@ info() ->
     % List = mnesia:dirty_all_keys(memrecord),
     % Data = mnesia:dirty_match_object(memrecord, #memrecord{_ = '_'}),
     Q = qlc:q([{X#memrecord.skey, #{hour => X#memrecord.hour, data_length => size(X#memrecord.data)}} || X <- mnesia:table(memrecord)]),
-    % ct:pal("Q=~p", [Q]),
     maps:from_list(do(Q)).
 
 do(Q) ->

@@ -4,7 +4,9 @@ PROJECT = navidb
 
 # Options.
 
-ERLC_OPTS ?= -Werror +debug_info +warn_export_all +warn_export_vars \
+# ERLC_OPTS = -Werror +debug_info
+
+ERLC_OPTS = -Werror +debug_info +warn_export_all +warn_export_vars \
 	+warn_shadow_vars +warn_obsolete_guard
 # +warn_missing_spec
 # COMPILE_FIRST = cowboy_middleware cowboy_sub_protocol
@@ -12,7 +14,7 @@ ERLC_OPTS ?= -Werror +debug_info +warn_export_all +warn_export_vars \
 # Dependencies error in erlang.mk?
 # CT_OPTS += -pa test -erl_args -config test/test.config -pa deps/mongodb/deps/*/ebin
 CT_OPTS += -cover test/cover.spec -erl_args -config test/test.config
-PLT_APPS = crypto public_key ssl
+PLT_APPS = crypto public_key
 
 # Dependencies.
 

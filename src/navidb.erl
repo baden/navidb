@@ -285,17 +285,6 @@ get_geos(Skey, From, To) ->
             <<"">>;
         [#{data := RawData}] ->
             list_to_binary(RawData)
-            % ct:pal("RawData = ~p", [RawData]),
-            % % Datas = lists:flatten(bson:at(data, Doc)),
-            % % Data
-            % Datas = lists:flatten(RawData),
-            % lists:foldl(
-            %     fun ({bin, bin, Data}, Acc) ->
-            %         <<Acc/binary, Data/binary>> %[Data | Acc]
-            %     end,
-            %     <<>>,
-            %     Datas
-            % )
     end,
 
     case navidb_gpsdb:get(Skey) of

@@ -22,16 +22,10 @@ end_per_suite(Config) ->
 insert_get(_) ->
     #{id := Skey1} = System1 = helper:fake_system(),
     #{id := Skey2} = System2 = helper:fake_system(),
-    ct:pal(" System1 = ~p", [System1]),
-    ct:pal(" System2 = ~p", [System2]),
-    System1a = navidb:insert(systems, System1),
-    System2a = navidb:insert(systems, System2),
-    ct:pal(" System1a = ~p", [System1a]),
-    ct:pal(" System2a = ~p", [System2a]),
+    #{id := Skey1} = navidb:insert(systems, System1),
+    #{id := Skey2} = navidb:insert(systems, System2),
 
     [Sys1, Sys2] = navidb:get(systems, [Skey1, Skey2]),
-    ct:pal(" Sys1 = ~p", [Sys1]),
-    ct:pal(" Sys2 = ~p", [Sys2]),
 
     ?assertMatch(#{id := Skey1}, Sys1),
     ?assertMatch(#{id := Skey2}, Sys2),
@@ -41,13 +35,6 @@ insert_get(_) ->
     ?assertMatch([#{error := <<"no_entry">>}], navidb:get(systems, [<<"lost_id">>])),
     navidb:remove(systems, #{id => Skey1}),
 
-    % FCatch = fun(POOL_NAME, Collection, Selector) ->
-    %     ct:pal(" catch:: POOL_NAME = ~p, Collection = ~p Selector = ~p", [POOL_NAME, Collection, Selector])
-    % end,
-    % meck:expect(navidb_mongodb, delete, fun(_C, _S) -> ok end),
-    % meck:expect(navidb_mongodb, delete, FCatch),
-    % mongo_pool:delete(?POOL_NAME, Coll, map_to_bson(Selector))
-    % meck:expect(mongo_pool, delete, FCatch),
     navidb:remove(systems, #{id => Skey2}),
     ok.
 
@@ -130,7 +117,6 @@ logs(_) ->
     Skip  = 100000000000,
     Count = 20,
     [Doc] = navidb:get_logs(Skey, Count, Skip),
-    ct:pal("Docs = ~p", [Doc]),
     ?assertMatch(#{system := Skey, text := Text}, Doc),
     ok.
 
@@ -156,7 +142,6 @@ config(_) ->
     navidb:set(params, Skey, #{data => Parced}),
 
     #{data := Data} = navidb:get(params, {id, Skey}),
-    ct:pal("Data = ~p", [Data]),
     ?assertMatch(
         #{
             'akkum.U.3' := #{
