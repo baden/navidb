@@ -8,7 +8,9 @@ all() -> [get, system].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
-    {ok, Modules} = application:ensure_all_started(navidb),
+    Result = application:ensure_all_started(navidb),
+    ct:pal("application:ensure_all_started(navidb) = ~p", [Result]),
+    {ok, Modules} = Result,
     [{modules, Modules} | Config].
 
 end_per_suite(Config) ->
