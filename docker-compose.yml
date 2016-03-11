@@ -1,0 +1,7 @@
+navidb:
+  build: .
+  links:
+    - mongodb:mongodb
+
+mongodb:
+  image: mongo:3

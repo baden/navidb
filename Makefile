@@ -58,3 +58,7 @@ update-erlang.mk:
 	#wget https://raw.githubusercontent.com/ninenines/erlang.mk/master/erlang.mk
 	curl -O https://raw.githubusercontent.com/ninenines/erlang.mk/master/erlang.mk
 
+.PHONY: test-in-docker
+
+test-in-docker:
+	docker-compose up
