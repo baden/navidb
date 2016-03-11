@@ -4,12 +4,15 @@
 
 -compile(export_all).
 
+-import(ct_helper, [doc/1]).
+
 all() -> [test1, test2, remove].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
     {ok, Modules} = application:ensure_all_started(navidb),
-    [{modules, Modules} | Config].
+    OTPRel = erlang:system_info(otp_release),
+    [{modules, Modules}, {otp_release, OTPRel} | Config].
 
 end_per_suite(Config) ->
     Modules = ?config(modules, Config),
@@ -28,6 +31,7 @@ end_per_testcase(_Case, Config) ->
 	ok.
 
 test1(Config) ->
+    doc("Test save functionality."),
     Skey = ?config(skey, Config),
     ok = navidb_gpsdb:save(Skey, 10, <<"fake-data1">>),
     ok = navidb_gpsdb:save(Skey, 10, <<"fake-data2">>),
@@ -43,9 +47,17 @@ test1(Config) ->
     % Сбросим кеш
     navidb_gpsdb:flush(Skey),
     Status1 = navidb_gpsdb:info(),
-    ?assertException(error, bad_key, maps:get(Skey, Status1)),
+    case ?config(otp_release, Config) of
+        "17" -> ?assertException(error, bad_key, maps:get(Skey, Status1));
+        "18" -> ?assertException(error, {badkey, _}, maps:get(Skey, Status1))
+    end,
+
+    % ?assertException(error, badkey(?config(otp_release, Config), _), maps:get(Skey, Status1)),
     % ?assertMatch(#{hour := 11, data_length := 20}, Info),
     ok.
+
+badkey("17", _Key) -> {error, bad_key};
+badkey("18", Key) -> {error, {badkey, Key}}.
 
 test2(_Config) ->
 

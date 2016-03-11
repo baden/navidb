@@ -22,6 +22,9 @@ PLT_APPS = crypto public_key
 DEPS = mongodb
 dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
 
+TEST_DEPS = ct_helper
+dep_ct_helper = git https://github.com/ninenines/ct_helper master
+
 # TEST_DEPS = ct_helper meck
 # TEST_DEPS = ct_helper
 # dep_ct_helper = git https://github.com/extend/ct_helper.git master
@@ -44,3 +47,10 @@ include erlang.mk
 test-shell: app
 	erl -pa ebin -pa deps/*/ebin -pa test -s navipoint -config test/test.config
 	# erl -pa ebin -pa deps/*/ebin -pa test -s sync -s navipoint -config test/test.config
+
+.PHONY: update-erlang.mk
+
+update-erlang.mk:
+	#wget https://raw.githubusercontent.com/ninenines/erlang.mk/master/erlang.mk
+	curl -O https://raw.githubusercontent.com/ninenines/erlang.mk/master/erlang.mk
+

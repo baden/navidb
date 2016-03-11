@@ -82,7 +82,7 @@ command(_) ->
     ok.
 
 system_cached(_) ->
-    #{id := Skey, imei := Imei} = System = helper:fake_system(),
+    #{id := Skey, imei := Imei} = _System = helper:fake_system(),
     % Read over cache
     ?assertMatch(#{imei := Imei}, navidb:get(system, Skey, cached)),
     % Read direct database

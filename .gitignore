@@ -13,3 +13,5 @@ test/Mnesia*
 Mnesia*
 site/*.html
 .erlang.mk.packages.*
+navidb.d
+.erlang.mk/
