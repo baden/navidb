@@ -25,6 +25,10 @@ dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
 TEST_DEPS = ct_helper
 dep_ct_helper = git https://github.com/ninenines/ct_helper master
 
+
+CI_OTP = OTP-17.5.6.6 OTP-18.2.1 OTP-18.1
+
+
 # TEST_DEPS = ct_helper meck
 # TEST_DEPS = ct_helper
 # dep_ct_helper = git https://github.com/extend/ct_helper.git master

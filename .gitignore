@@ -15,3 +15,5 @@ site/*.html
 .erlang.mk.packages.*
 navidb.d
 .erlang.mk/
+kerl
+rebar
