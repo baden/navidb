@@ -6,6 +6,7 @@ script: "sleep 5 && make tests"
 branches:
   only:
     - master
+    - refresh
 notifications:
   email:
     - baden.i.ua@gmail.com
