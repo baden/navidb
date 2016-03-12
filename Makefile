@@ -20,7 +20,8 @@ PLT_APPS = crypto public_key
 # Dependencies.
 
 DEPS = mongodb
-dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
+# dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
+dep_mongodb = git https://github.com/comtihon/mongodb-erlang.git d251e76
 
 TEST_DEPS = ct_helper
 dep_ct_helper = git https://github.com/ninenines/ct_helper master
@@ -49,7 +50,7 @@ include erlang.mk
 # DIALYZER_OPTS += --src -r test
 
 test-shell: app
-	erl -pa ebin -pa deps/*/ebin -pa test -s navipoint -config test/test.config
+	erl -pa ebin -pa deps/*/ebin -pa test -s navidb -config test/test.config
 	# erl -pa ebin -pa deps/*/ebin -pa test -s sync -s navipoint -config test/test.config
 
 .PHONY: update-erlang.mk

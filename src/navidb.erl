@@ -32,7 +32,8 @@
 %
 -spec insert(Collection :: atom(), Document :: document()) -> document().
 insert(Collection, Document) ->
-    navidb_mongodb:insert(collection_name(Collection), Document).
+    {ok, {{true, _}, Result}} = mongo_worker:insert(collection_name(Collection), Document),
+    Result.
 
 % TODO: Добавить опциональные ключи для запросов через кеш
 % get(Collection, Selector, Options) ->
@@ -42,13 +43,13 @@ get(Collection, Keys) when is_list(Keys) ->
 
     lists:reverse(lists:foldl(
         fun(Key, Acc) ->
-            Record = case navidb_mongodb:find_one(collection_name(Collection), #{id => Key}) of
-                #{error := no_entry} ->    % Записи о системе еще нет.
+            Record = case mongo_worker:find_one(collection_name(Collection), #{id => Key}) of
+                {error, _} ->    % Записи о системе еще нет.
                     #{
                         id    => Key,
                         error => <<"no_entry">>
                     };
-                Document ->
+                {ok, Document} ->
                     prepare_doc(Collection, Document)
                 end,
             [Record | Acc]
@@ -67,20 +68,24 @@ get(command, Skey) ->
 % get(_Collection, Selector) when is_map(Selector) ->
 %     erlang:error(badarg);
 get(Collection, Key) when is_binary(Key) ->
-    get(Collection, {id, Key});
+    get(Collection, #{<<"id">> => Key});
 
 get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
-    RawDoc = navidb_mongodb:find_one(collection_name(Collection), Selector),
-    prepare_doc(Collection, RawDoc).
+    case mongo_worker:find_one(collection_name(Collection), Selector) of
+        {ok, RawDoc} ->
+            prepare_doc(Collection, RawDoc);
+        {error, not_found} ->
+            #{error => no_entry}
+    end.
 
 % По идее это тоже нужно перенести в navidb
 % Присобачить к записи системы виртуальное поле dynamic
 % prepare_doc(systems, Document = #{<<"id">> := Skey}) ->
-prepare_doc(systems, Document = #{id := Skey}) ->
+prepare_doc(systems, Document = #{<<"id">> := Skey}) ->
     case navidb:get(dynamic, Skey) of
         {ok, Dynamic} ->
             % [{dynamic, Dynamic}] ++ Document;
-            Document#{ dynamic => Dynamic};
+            Document#{ <<"dynamic">> => Dynamic};
         _ -> Document
     end;
 
@@ -88,14 +93,14 @@ prepare_doc(params, Document = #{data := Data}) ->
     % Я лоханулся. Требуется отфильтровать двойные кавычки
     % Это бып сделать на этапе парсинга в navipoint_config
     Filtered = maps:fold(
-        fun(Name, #{type := Type, value := Value, default := Default}, Acc) ->
+        fun(Name, #{<<"type">> := Type, <<"value">> := Value, <<"default">> := Default}, Acc) ->
             maps:put(
                 % type_to_repr(Name),
                 Name,
                 #{
-                    type    => Type,
-                    value   => remquotes(Value),
-                    default => remquotes(Default)
+                    <<"type">>    => Type,
+                    <<"value">>   => remquotes(Value),
+                    <<"default">> => remquotes(Default)
                 },
                 Acc
             )
@@ -103,7 +108,7 @@ prepare_doc(params, Document = #{data := Data}) ->
         #{},
         Data
     ),
-    Document#{data := Filtered};
+    Document#{<<"data">> := Filtered};
 
 prepare_doc(_Collection, Document) ->
     Document.
@@ -123,7 +128,8 @@ remquotes(In) ->
 
 % OPTIONS скорее всего информация о системе не требуется.
 get(Collection, Selector, {filter, Fields}) ->
-    maps:without(Fields, get(Collection, Selector));
+    Result = get(Collection, Selector),
+    maps:without(Fields, Result);
 
 get(system, Skey, cached) ->
     Imei = base64:decode(Skey),
@@ -136,25 +142,25 @@ get(system, Skey, cached) ->
             LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
 
             #{
-                id      => Skey,
-                imei    => Imei,                                % IMEI
-                date    => unixtime(),                          % Дата/время первого выхода на связь
-                phone   => <<>>,                                % Номер SIM-карты
-                premium => unixtime() + 60*60*24*31,            % 1 месяц премиум-подписки
-                title   => <<"Трекер "/utf8, LastImei/binary>>, % Отображаемое наименование транспортного средства
-                icon    => <<"caricon-truck">>,                 % Значек
-                car     => {},                                  % Запись о транспортном средстве
-                tags    => [],                                  % Ярлыки
-                groups  => [],                                  % Принадлежность к группам
-                lock    => false,                               % Если установлен в true, то данный трекер запрещено добавлять в список наблюдения
-                public  => true,                                % Если установлен в true, то трекер доступен для автоматического добавления членам группы
-                params  => #{
-                    fuel => [
-                        #{voltage =>  0.0, liters => 0.0},
-                        #{voltage => 10.0, liters => 100.0}
+                <<"id">>      => Skey,
+                <<"imei">>    => Imei,                                % IMEI
+                <<"date">>    => unixtime(),                          % Дата/время первого выхода на связь
+                <<"phone">>   => <<>>,                                % Номер SIM-карты
+                <<"premium">> => unixtime() + 60*60*24*31,            % 1 месяц премиум-подписки
+                <<"title">>   => <<"Трекер "/utf8, LastImei/binary>>, % Отображаемое наименование транспортного средства
+                <<"icon">>    => <<"caricon-truck">>,                 % Значек
+                <<"car">>     => {},                                  % Запись о транспортном средстве
+                <<"tags">>    => [],                                  % Ярлыки
+                <<"groups">>  => [],                                  % Принадлежность к группам
+                <<"lock">>    => false,                               % Если установлен в true, то данный трекер запрещено добавлять в список наблюдения
+                <<"public">>  => true,                                % Если установлен в true, то трекер доступен для автоматического добавления членам группы
+                <<"params">>  => #{
+                    <<"fuel">> => [
+                        #{<<"voltage">> =>  0.0, <<"liters">> => 0.0},
+                        #{<<"voltage">> => 10.0, <<"liters">> => 100.0}
                     ],
                     % notranslate, false              % Если установлен в true, то трансляция данных на старый сервер не требуется
-                    notranslate => true              % Если установлен в true, то трансляция данных на старый сервер не требуется
+                    <<"notranslate">> => true              % Если установлен в true, то трансляция данных на старый сервер не требуется
                 }
             }
         end
@@ -162,32 +168,33 @@ get(system, Skey, cached) ->
 
 
 update(Collection, Selector = {Field, Key}, Document) ->
-    Res = navidb_mongodb:update(collection_name(Collection), Selector, Document, true),
+    Res = mongo_worker:update(collection_name(Collection), Selector, Document, true, false),
     navidb_subs:broadcast(name(Collection), Key, null),
     navidb_cache:delete(collection_name(Collection), Field, Key),
     Res;
 
 % Important! Ignore other fields!
-update(Collection, #{id := Key}, Document) ->
+update(Collection, #{<<"id">> := Key}, Document) ->
     update(Collection, {id, Key}, Document);
 
 update(Collection, Selector, Document) when is_map(Selector)->
-    Fields = maps:keys(Selector),
-    case length(Fields) of
-        1 ->
-            update(Collection, {hd(Fields), maps:get(hd(Fields), Selector)}, Document);
-        _ ->
-            navidb_mongodb:update(collection_name(Collection), Selector, Document, true)
-            % erlang:error(badarg)
-    end;
+    mongo_worker:update(collection_name(Collection), Selector, Document);
+    % Fields = maps:keys(Selector),
+    % case length(Fields) of
+    %     1 ->
+    %         update(Collection, {hd(Fields), maps:get(hd(Fields), Selector)}, Document);
+    %     _ ->
+    %         mongo_worker:update(collection_name(Collection), Selector, Document, true)
+    %         % erlang:error(badarg)
+    % end;
 
 update(Collection, Key, Document) ->
     update(Collection, {id, Key}, Document).
 
 set(Collection, {Field, Key}, Document) ->
-    Res = navidb_mongodb:update(collection_name(Collection), {Field, Key}, #{'$set' => Document}, true),
+    Res = mongo_worker:update(collection_name(Collection), {Field, Key}, #{<<"$set">> => Document}, true, false),
     navidb_subs:broadcast(name(Collection), Key, Document),
-    navidb_cache:delete(Collection, Field, Key),
+    navidb_cache:delete(collection_name(Collection), Field, Key),
     Res;
 
 set(dynamic, Skey, Dynamic) ->
@@ -206,7 +213,7 @@ remove(Collection, Selector, {flush, {gps, Skey}}) ->
 
 % TODO: Обратить внимание на кеш
 remove(Collection, Selector) ->
-    navidb_mongodb:delete(collection_name(Collection), Selector).
+    mongo_worker:delete(collection_name(Collection), Selector).
 
 delete(command, Skey) ->
     navidb_cache:delete(command, Skey).
@@ -230,26 +237,26 @@ delete(command, Skey) ->
 get_gps_hours(Skey, From, To) ->
     % !!! Этo не может быть map, так как важен порядок сделования полей (недоработка mongoDB)
     Pipeline = [
-        {'$match', {
-            system, Skey,
-            hour, {
-                '$gte', From,
-                '$lte', To
+        {<<"$match">>, {
+            <<"system">>, Skey,
+            <<"hour">>, {
+                <<"$gte">>, From,
+                <<"$lte">>, To
             }
         }},
-        {'$group', {
-            '_id', 0, hours, {
-                '$addToSet', <<"$hour">>
+        {<<"$group">>, {
+            <<"_id">>, 0, <<"hours">>, {
+                <<"$addToSet">>, <<"$hour">>
             }
         }}
     ],
-    Hours = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
+    {ok, Res} = mongo_worker:aggregate(collection_name(gps), Pipeline),
+    % {ok, {true, Hours}} = case mongo_worker:aggregate(collection_name(gps), Pipeline) of
+    Hours = case Res of
         [] ->
             [];
         [Doc] ->
-            % TODO: maps:get(hours) ?
-            % bson:at(hours, Doc)
-            maps:get(hours, Doc)
+            maps:get(<<"hours">>, Doc)
     end,
 
     % Добавим час, который в mnesia
@@ -264,27 +271,29 @@ get_gps_hours(Skey, From, To) ->
 % TODO: Не самое элегантное решение. Сделано пока абыкак.
 get_logs(Skey, Count, Skip) ->
     Pipeline = [
-        {'$match', {system, Skey, dt, {'$lt', Skip}}},
-        {'$sort', {dt, -1}},
-        {'$limit', Count}
+        {<<"$match">>, {<<"system">>, Skey, <<"dt">>, {<<"$lt">>, Skip}}},
+        {<<"$sort">>, {<<"dt">>, -1}},
+        {<<"$limit">>, Count}
     ],
-    navidb_mongodb:aggregate(collection_name(logs), Pipeline).
+    {ok, Res} = mongo_worker:aggregate(collection_name(logs), Pipeline),
+    Res.
 
 get_geos(Skey, From, To) ->
     Pipeline = [
-        {'$match', {
-            system, Skey,
-            hour, {'$gte', From, '$lte', To}
+        {<<"$match">>, {
+            <<"system">>, Skey,
+            <<"hour">>, {<<"$gte">>, From, <<"$lte">>, To}
         }},
-        {'$sort', {hour, 1}},
-        {'$group', {'_id', 0, data, {'$push', <<"$data">>}}}
+        {<<"$sort">>, {<<"hour">>, 1}},
+        {<<"$group">>, {<<"_id">>, 0, <<"data">>, {<<"$push">>, <<"$data">>}}}
     ],
 
-    Flat = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
+    {ok, Res} = mongo_worker:aggregate(collection_name(gps), Pipeline),
+    Flat = case Res of
         [] ->
             <<"">>;
-        [#{data := RawData}] ->
-            list_to_binary(RawData)
+        [#{<<"data">> := [[{bin, bin, RawData}]]}] ->
+            RawData
     end,
 
     case navidb_gpsdb:get(Skey) of
@@ -296,29 +305,29 @@ get_geos(Skey, From, To) ->
 
 get_all_systems() ->
     Pipeline = [
-        {'$project', {
-            '_id', 1, imei, 1, date, 1, hwid, 1, swid, 1
+        {<<"$project">>, {
+            <<"_id">>, 1, <<"imei">>, 1, <<"date">>, 1, <<"hwid">>, 1, <<"swid">>, 1
         }},
-        {'$sort', {date, 1}}
+        {<<"$sort">>, {<<"date">>, 1}}
     ],
-    navidb_mongodb:aggregate(collection_name(systems), Pipeline).
-    % case navidb_mongodb:aggregate(collection_name(systems), Pipeline) of
+    mongo_worker:aggregate(collection_name(systems), Pipeline).
+    % case mongo_worker:aggregate(collection_name(systems), Pipeline) of
     %     [] ->
     %         [];
     %     Doc ->
-    %         % navidb_mongodb:bson_to_json(Doc)
+    %         % mongo_worker:bson_to_json(Doc)
     %         Doc
     % end.
 
 
 % Private
 
-collection_name(accounts)   -> navicc_accounts;
-collection_name(groups)     -> navicc_groups;
-collection_name(systems)    -> navicc_systems;
-collection_name(params)     -> navicc_params;
-collection_name(logs)       -> navicc_logs;
-collection_name(gps)        -> navicc_gps.
+collection_name(accounts)   -> <<"navicc_accounts">>;
+collection_name(groups)     -> <<"navicc_groups">>;
+collection_name(systems)    -> <<"navicc_systems">>;
+collection_name(params)     -> <<"navicc_params">>;
+collection_name(logs)       -> <<"navicc_logs">>;
+collection_name(gps)        -> <<"navicc_gps">>.
 
 % Соответствие коллекции имени ресурса в подписчике
 name(accounts) -> account;

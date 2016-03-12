@@ -19,7 +19,7 @@ end_per_suite(Config) ->
     ok.
 
 account(_) ->
-    #{username := Username} = Account = helper:fake_account(),
+    #{<<"username">> := Username} = Account = helper:fake_account(),
     navidb:insert(accounts, Account),
     % groups
     Self = self(),
@@ -38,9 +38,9 @@ account(_) ->
 
     Res3 = navidb:get(accounts, {username, Username}, {filter, ['_id', 'password']}),
     ?assertMatch(#{
-                    username := Username,
-                    date     := 2,
-                    groups   := []
+                    <<"username">> := Username,
+                    <<"date">>     := 2,
+                    <<"groups">>   := []
                 }, Res3),
     navidb:remove(accounts, #{username => Username}),
     ok.

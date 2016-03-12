@@ -67,11 +67,11 @@ save(Skey, Hour, Data) ->
 
                 OldHour ->  % Запись в другой час
                     % Сначала сохраним данные из прошлого часа
-                    navidb_mongodb:update(
-                        navicc_gps, %?DB_GPS,
-                        #{system => Skey, hour => OldHour},
-                        #{'$push' => #{data => {bin, bin, Record#memrecord.data}}},
-                        true
+                    {ok, {true, Result}} = mongo_worker:update(
+                        <<"navicc_gps">>, %?DB_GPS,
+                        #{<<"system">> => Skey, <<"hour">> => OldHour},
+                        #{<<"$push">> => #{<<"data">> => {bin, bin, Record#memrecord.data}}},
+                        true, false
                     ),
 
                     % И сохраним данные нового часа
@@ -100,11 +100,11 @@ flush(Skey) ->
         [] ->   % Такой записи еще нет. Для этой системы вообще нет зыписей? Сохранение не требуется
             ok;
         [Record] -> % Да, в памяти есть запись уже есть.
-            navidb_mongodb:update(
-                navicc_gps, %?DB_GPS,
-                #{system => Skey, hour => Record#memrecord.hour},
-                #{'$push' => #{data => {bin, Record#memrecord.data}}},
-                true
+            mongo_worker:update(
+                <<"navicc_gps">>, %?DB_GPS,
+                #{<<"system">> => Skey, <<"hour">> => Record#memrecord.hour},
+                #{<<"$push">> => #{<<"data">> => {bin, bin, Record#memrecord.data}}},
+                true, false
             ),
 
             % Удалим запись из памяти

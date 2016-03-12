@@ -9,6 +9,8 @@
                     stdlib,
                     mnesia,
                     poolboy,
+                    bson,
+                    crypto,
                     mongodb
                     ]},
     {start_phases, [{init,[]}]},

@@ -8,7 +8,9 @@ all() -> [get, system].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
-    {ok, Modules} = application:ensure_all_started(navidb),
+    Result = application:ensure_all_started(navidb),
+    {ok, Modules} = Result,
+    % {ok, Modules} = application:ensure_all_started(navidb),
     [{modules, Modules} | Config].
 
 end_per_suite(Config) ->
@@ -19,8 +21,8 @@ end_per_suite(Config) ->
     ok.
 
 init_per_testcase(_Case, Config) ->
-    #{username := Username} = Account = helper:fake_account(),
-    navidb:insert(accounts, Account),
+    #{<<"username">> := Username} = Account = helper:fake_account(),
+    #{<<"username">> := Username} = navidb:insert(accounts, Account),
     [{username, Username} | Config].
 
 end_per_testcase(_Case, Config) ->
@@ -32,9 +34,9 @@ get(Config) ->
     Username = ?config(username, Config),
     Res2 = navidb:get(accounts, {username, Username}, {filter, [id, 'password']}),
     ?assertMatch(#{
-                    username := Username,
-                    groups   := [],
-                    skeys    := []
+                    <<"username">> := Username,
+                    <<"groups">>   := [],
+                    <<"skeys">>    := []
                 }, Res2),
     ?assertException(error, {badmatch, _Reason}, #{id := _} = Res2),
     ?assertException(error, {badmatch, _Reason}, #{password := _} = Res2),
@@ -42,10 +44,10 @@ get(Config) ->
 
 system(Config) ->
     Username = ?config(username, Config),
-    #{id := Skey} = helper:fake_system(),
-    #{skeys := SkeysBefore} = navidb:get(accounts, {username, Username}),
+    #{<<"id">> := Skey} = helper:fake_system(),
+    #{<<"skeys">> := SkeysBefore} = navidb:get(accounts, {username, Username}),
     ?assertEqual(false, lists:member(Skey, SkeysBefore)),
-    ok = navidb:update(accounts, #{username => Username}, {'$addToSet', {skeys, Skey}}),
-    #{skeys := SkeysAfter} = navidb:get(accounts, {username, Username}),
+    {ok, {true, _}} = navidb:update(accounts, #{<<"username">> => Username}, #{<<"$addToSet">> => #{<<"skeys">> => Skey}}),
+    #{<<"skeys">> := SkeysAfter} = navidb:get(accounts, {username, Username}),
     ?assertEqual(true, lists:member(Skey, SkeysAfter)),
     ok.

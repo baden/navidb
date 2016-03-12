@@ -20,36 +20,36 @@ end_per_suite(Config) ->
 
 
 insert_get(_) ->
-    #{id := Skey1} = System1 = helper:fake_system(),
-    #{id := Skey2} = System2 = helper:fake_system(),
-    #{id := Skey1} = navidb:insert(systems, System1),
-    #{id := Skey2} = navidb:insert(systems, System2),
+    #{<<"id">> := Skey1} = System1 = helper:fake_system(),
+    #{<<"id">> := Skey2} = System2 = helper:fake_system(),
+    #{<<"id">> := Skey1} = navidb:insert(systems, System1),
+    #{<<"id">> := Skey2} = navidb:insert(systems, System2),
 
     [Sys1, Sys2] = navidb:get(systems, [Skey1, Skey2]),
 
-    ?assertMatch(#{id := Skey1}, Sys1),
-    ?assertMatch(#{id := Skey2}, Sys2),
+    ?assertMatch(#{<<"id">> := Skey1}, Sys1),
+    ?assertMatch(#{<<"id">> := Skey2}, Sys2),
 
     % All = navidb:get_all_systems(),
 
     ?assertMatch([#{error := <<"no_entry">>}], navidb:get(systems, [<<"lost_id">>])),
-    navidb:remove(systems, #{id => Skey1}),
+    navidb:remove(systems, #{<<"id">> => Skey1}),
 
-    navidb:remove(systems, #{id => Skey2}),
+    navidb:remove(systems, #{<<"id">> => Skey2}),
     ok.
 
 update(_) ->
-    #{id := Skey} = System = helper:fake_system(),
+    #{<<"id">> := Skey} = System = helper:fake_system(),
     navidb:insert(systems, System),
-    ?assertException(error, {badmatch, _}, #{foo := _} = navidb:get(systems, {id, Skey})),
+    ?assertException(error, {badmatch, _}, #{<<"foo">> := _} = navidb:get(systems, {id, Skey})),
     % navidb:update(systems, Skey, #{'$set' => #{foo => <<"bar">>}}),
     % navidb:update(systems, {id, Skey}, #{'$set' => #{foo => <<"bar">>}}),
-    navidb:update(systems, #{id => Skey}, #{'$set' => #{foo => <<"bar">>}}),
-    ?assertMatch(#{foo := <<"bar">>}, navidb:get(systems, {id, Skey})),
+    navidb:update(systems, #{<<"id">> => Skey}, #{<<"$set">> => #{<<"foo">> => <<"bar">>}}),
+    ?assertMatch(#{<<"foo">> := <<"bar">>}, navidb:get(systems, {id, Skey})),
 
-    Record = #{'value' => 10, 'dt' => 0},
-    navidb:update(systems, Skey, #{'$set' => #{'balance' => Record}}),
-    ?assertMatch(#{balance := Record}, navidb:get(systems, {id, Skey})),
+    Record = #{<<"value">> => 10, <<"dt">> => 0},
+    navidb:update(systems, Skey, #{<<"$set">> => #{<<"balance">> => Record}}),
+    ?assertMatch(#{<<"balance">> := Record}, navidb:get(systems, {id, Skey})),
 
     navidb:remove(systems, #{id => Skey}),
     ok.
@@ -57,15 +57,15 @@ update(_) ->
 dynamic(_) ->
     % System = fake_system(<<"fake-01">>),
     System = helper:fake_system(),
-    #{id := Skey} = System,
+    #{<<"id">> := Skey} = System,
     navidb:insert(systems, System),
     % No dynamic field before
-    ?assertException(error, {badmatch, _}, #{dynamic := _} = navidb:get(systems, {id, Skey})),
+    ?assertException(error, {badmatch, _}, #{<<"dynamic">> := _} = navidb:get(systems, {id, Skey})),
     % TODO: need test broadcast
-    navidb:set(dynamic, Skey, #{ foo => <<"bar">> }),
+    navidb:set(dynamic, Skey, #{ <<"foo">> => <<"bar">> }),
     % Must contain dynamic field now
-    ?assertMatch(#{dynamic := _}, navidb:get(systems, {id, Skey})),
-    navidb:remove(systems, #{id => Skey}),
+    ?assertMatch(#{<<"dynamic">> := _}, navidb:get(systems, {id, Skey})),
+    navidb:remove(systems, #{<<"id">> => Skey}),
     ok.
 
 command(_) ->
@@ -82,83 +82,87 @@ command(_) ->
     ok.
 
 system_cached(_) ->
-    #{id := Skey, imei := Imei} = _System = helper:fake_system(),
+    #{<<"id">> := Skey, <<"imei">> := Imei} = _System = helper:fake_system(),
     % Read over cache
-    ?assertMatch(#{imei := Imei}, navidb:get(system, Skey, cached)),
+    ?assertMatch(#{<<"imei">> := Imei}, navidb:get(system, Skey, cached)),
     % Read direct database
-    ?assertMatch(#{imei := Imei}, navidb:get(systems, Skey)),
+    ?assertMatch(#{<<"imei">> := Imei}, navidb:get(systems, Skey)),
     % Remove from database
     navidb:remove(systems, #{id => Skey}),
     % Read over cache. Must be steel present
-    ?assertMatch(#{imei := Imei}, navidb:get(system, Skey, cached)),
+    ?assertMatch(#{<<"imei">> := Imei}, navidb:get(system, Skey, cached)),
     % Must not be acceseble on database
     ?assertMatch(#{error := no_entry}, navidb:get(systems, Skey)),
     % Write to DB fake Document
-    navidb:insert(systems, #{id => Skey, fake => <<"doc">>}),
+    navidb:insert(systems, #{<<"id">> => Skey, <<"fake">> => <<"doc">>}),
     % Update will clean cache
-    navidb:update(systems, #{id => Skey}, #{'$set' => #{foo => <<"bar">>}}),
+    navidb:update(systems, #{<<"id">> => Skey}, #{<<"$set">> => #{<<"foo">> => <<"bar">>}}),
     % Prevent data in database
     % meck:expect(navidb_mongodb, find_one, 2, #{fake => <<"doc">>}),
-    ?assertMatch(#{fake := <<"doc">>}, navidb:get(system, Skey, cached)),
+    ?assertMatch(#{<<"fake">> := <<"doc">>}, navidb:get(system, Skey, cached)),
     % find_one(Coll, Selector)
     % meck:unload(navidb_mongodb),
     navidb:remove(systems, #{id => Skey}),
     ok.
 
 logs(_) ->
-    #{id := Skey} = helper:fake_system(),
+    #{<<"id">> := Skey} = helper:fake_system(),
     Text = <<"Log text">>,
     Document = #{
-        'system' => Skey,
-        'dt'     => helper:unixtime(),
-        'text'   => Text
+        <<"system">> => Skey,
+        <<"dt">>     => helper:unixtime(),
+        <<"text">>   => Text
     },
     navidb:insert(logs, Document),
     Skip  = 100000000000,
     Count = 20,
     [Doc] = navidb:get_logs(Skey, Count, Skip),
-    ?assertMatch(#{system := Skey, text := Text}, Doc),
+    ?assertMatch(#{<<"system">> := Skey, <<"text">> := Text}, Doc),
     ok.
 
 config(_) ->
-    #{id := Skey} = helper:fake_system(),
+    #{<<"id">> := Skey} = helper:fake_system(),
     Parced = #{
-		<<"gsm.server">> => #{
-			value  => <<"point.new.navi.cc">>,
-			type    => <<"STR32">>,
-			default => <<"map.navi.cc">>
+		<<"gsm#server">> => #{
+			<<"value">>   => <<"point.new.navi.cc">>,
+			<<"type">>    => <<"STR32">>,
+			<<"default">> => <<"map.navi.cc">>
 		},
-		<<"gps.V0.3">> => #{
-			value   => <<"20">>,
-			type    => <<"INT">>,
-			default => <<"20">>
+		<<"gps#V0#3">> => #{
+			<<"value">>   => <<"20">>,
+			<<"type">>    => <<"INT">>,
+			<<"default">> => <<"20">>
 		},
-		<<"akkum.U.3">> => #{
-			value   => <<"984">>,
-			type    => <<"INT">>,
-			default => <<"984">>
+		<<"akkum#U#3">> => #{
+			<<"value">>   => <<"984">>,
+			<<"type">>    => <<"INT">>,
+			<<"default">> => <<"984">>
 		}
 	},
-    navidb:set(params, Skey, #{data => Parced}),
+    navidb:set(params, Skey, #{<<"data">> => Parced}),
 
-    #{data := Data} = navidb:get(params, {id, Skey}),
+    #{<<"data">> := Data} = navidb:get(params, Skey),
     ?assertMatch(
         #{
-            'akkum.U.3' := #{
-                default := <<"984">>, type := <<"INT">>, value := <<"984">>
+            <<"akkum#U#3">> := #{
+                <<"default">> := <<"984">>,
+                <<"type">>    := <<"INT">>,
+                <<"value">>   := <<"984">>
             },
-            'gps.V0.3' := #{
-                default := <<"20">>, type := <<"INT">>, value := <<"20">>
+            <<"gps#V0#3">> := #{
+                <<"default">> := <<"20">>,
+                <<"type">>    := <<"INT">>,
+                <<"value">>   := <<"20">>
             },
-            'gsm.server' := #{
-                default := <<"map.navi.cc">>,
-                type := <<"STR32">>,
-                value := <<"point.new.navi.cc">>
+            <<"gsm#server">> := #{
+                <<"default">> := <<"map.navi.cc">>,
+                <<"type">>    := <<"STR32">>,
+                <<"value">>   := <<"point.new.navi.cc">>
             }
         },
         Data
     ),
 
-    #{id := Skey2} = helper:fake_system(),
+    #{<<"id">> := Skey2} = helper:fake_system(),
     #{error := no_entry} = navidb:get(params, {id, Skey2}),
     ok.

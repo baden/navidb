@@ -3,6 +3,7 @@
 
 
 -export([
+        connect/0,
         child_spec/0,
         insert/2,
         % update/3,
@@ -30,39 +31,77 @@ child_spec() ->
 
     mongo_pool:child_spec(?POOL_NAME, PoolSize, Server, Port, Database, MaxOverflow).
 
+connect() ->
+    Server     = application:get_env(navidb, hostname, "localhost"),
+    Port       = application:get_env(navidb, port, 27017),
+    {ok, Database}   = application:get_env(navidb, database),
+    Seed = {single, "localhost:27017"},
+    Options = [
+        {name,         fakepoolname},
+        {register,     ?POOL_NAME},
+        {pool_size,    5},
+        {max_overflow, 10}
+    ],
+    WorkerOptions = [
+        {database, Database}
+    ],
+    {ok, Topology} = mongoc:connect( Seed, Options, WorkerOptions ),
+    io:format("Topology = ~p~n", [Topology]),
+    ok.
+
 insert(Coll, Doc) ->
-    bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
+    % bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
+    Result = mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:insert(Worker, Coll, map_to_bson(Doc))
+    end),
+    bson_to_map(Result).
 
 % update(Coll, Selector, Doc) ->
 %     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
 
 update(Coll, Selector, Doc, Upsert) ->
-    mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc), Upsert).
+    % mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc), Upsert).
+    mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:update(Worker, Coll, map_to_bson(Selector), map_to_bson(Doc), Upsert)
+    end).
 
 delete(Coll, Selector) ->
-    mongo_pool:delete(?POOL_NAME, Coll, map_to_bson(Selector)).
+    % mongo_pool:delete(?POOL_NAME, Coll, map_to_bson(Selector)).
+    mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:delete(Worker, Coll, map_to_bson(Selector))
+    end).
 
 find_one(Coll, Selector) ->
-    case mongo_pool:find_one(?POOL_NAME, Coll, map_to_bson(Selector)) of
+    Result = mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:find_one(Worker, Coll, map_to_bson(Selector))
+    end),
+    % case mongo_pool:find_one(?POOL_NAME, Coll, map_to_bson(Selector)) of
+    case Result of
         {} -> #{error => no_entry};
         {Res} -> bson_to_map(Res)
     end.
 
 aggregate(Coll, Pipeline) ->
     Cmd = {
-        aggregate, atom_to_binary(Coll, latin1),
+        <<"aggregate">>, atom_to_binary(Coll, latin1),
         % pipeline, map_to_bson(Pipeline)
-        pipeline, Pipeline
+        <<"pipeline">>, Pipeline
     },
 
     % Original (not implemented yet)
     % Res = mongo_pool:command(?POOL_NAME, Cmd),
-    {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
+    % {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
+    {Res} = mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:command(Worker, Cmd)
+    end),
     _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
     bson_to_map(bson:at(result, Res)).
 
 ensure_index(Coll, IndexSpec) ->
-    mongo_pool:ensure_index(?POOL_NAME, Coll, IndexSpec).
+    % mongo_pool:ensure_index(?POOL_NAME, Coll, IndexSpec).
+    mongoc:transaction(?POOL_NAME,
+        fun(Worker) -> mc_worker_api:ensure_index(Worker, Coll, IndexSpec)
+    end).
 
 % % Преобразование bson:document() в значение, готовое к jsxn:encode
 

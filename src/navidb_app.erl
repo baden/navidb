@@ -20,12 +20,11 @@ start_phase(init, _Type, _Args) ->
 stop(_State) ->
     ok.
 
-
 createindexes() ->
-    ok = navidb_mongodb:ensure_index(navicc_groups, {key, {groupname, 1}, unique, true}),
-    ok = navidb_mongodb:ensure_index(navicc_accounts, {key, {username, 1}, unique, true}),
-    ok = navidb_mongodb:ensure_index(navicc_logs, {key, {system, 1, dt, 1}}),
-    ok = navidb_mongodb:ensure_index(navicc_balance, {key, {system, 1, dt, 1}}),
-    % ok = navidb_mongodb:ensure_index(?SYSTEMS, {key, {imei, 1}, unique, true}),
-    ok = navidb_mongodb:ensure_index(navicc_gps, {key, {system, 1, hour, 1}}),
+    {ok, ok} = mongo_worker:ensure_index(navicc_groups, #{<<"key">> => #{<<"groupname">> => 1}, <<"unique">> => true, <<"dropDups">> => true}),
+    {ok, ok} = mongo_worker:ensure_index(navicc_accounts, #{<<"key">> => #{<<"username">> => 1}, <<"unique">> => true, <<"dropDups">> => true}),
+    {ok, ok} = mongo_worker:ensure_index(navicc_logs, #{<<"key">> => #{<<"system">> => 1, <<"dt">> => 1}}),
+    {ok, ok} = mongo_worker:ensure_index(navicc_balance, #{<<"key">> => #{<<"system">> => 1, <<"dt">> => 1}}),
+    % {ok, ok} = mongo_worker:ensure_index(?SYSTEMS, #{<<"key">> => #{<<"imei">> => 1}, <<"unique">> => true, <<"dropDups">> => true}),
+    {ok, ok} = mongo_worker:ensure_index(navicc_gps, #{<<"key">> => #{<<"system">> => 1, <<"hour">> => 1}}),
     ok.

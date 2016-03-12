@@ -38,14 +38,14 @@ get_cached(Collection, {Field, Key}, Callback) ->
         {ok, MemDocument} ->
             MemDocument;
         {error, notfound} ->
-            case navidb_mongodb:find_one(Collection, {Field, Key}) of
-                #{error := no_entry} ->
+            case mongo_worker:find_one(Collection, {Field, Key}) of
+                {error, _} ->
                     NewDocument = Callback(),
-                    navidb_mongodb:insert(Collection, NewDocument),
-                    % CahceDocument = navidb_mongodb:bson_to_json(NewDocument),
+                    mongo_worker:insert(Collection, NewDocument),
+                    % CahceDocument = mongo_worker:bson_to_json(NewDocument),
                     put_(?MEMCACHE_TABLE, Id, NewDocument),
                     NewDocument;
-                DbDocument ->
+                {ok, DbDocument} ->
                     put_(?MEMCACHE_TABLE, Id, DbDocument),
                     DbDocument
             end
@@ -59,7 +59,7 @@ get_cached(Name, Key, Callback) ->
 % Private
 
 id(Collection, Field, Key) ->
-    list_to_binary(io_lib:format("~p:~p:~p", [name(Collection), Field, Key])).
+    list_to_binary(io_lib:format("~p:~p:~p", [Collection, Field, Key])).
 
 get_(Table, Key) ->
     case ets:lookup(Table, Key) of
@@ -77,12 +77,12 @@ delete_(Table, Key) ->
     ets:delete(Table, Key).
 
 % Соответствие коллекции имени ресурса
-name(navicc_accounts) -> account;
-name(navicc_groups) -> group;
-name(navicc_systems) -> system;
-name(navicc_params) -> param;
-name(navicc_logs) -> log;
-name(navicc_gps) -> gps;
-name(dynamic) -> system_dynamic;
-name(command) -> system_command;
-name(_) -> unknown.
+% name(<<"navicc_accounts">>) -> account;
+% name(<<"navicc_groups">>) -> group;
+% name(<<"navicc_systems">>) -> system;
+% name(<<"navicc_params">>) -> param;
+% name(<<"navicc_logs">>) -> log;
+% name(<<"navicc_gps">>) -> gps;
+% name(<<"dynamic">>) -> system_dynamic;
+% name(<<"command">>) -> system_command.
+% % name(_) -> unknown.   % Make error
