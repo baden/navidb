@@ -32,19 +32,19 @@ end_per_testcase(_Case, Config) ->
 
 get(Config) ->
     Username = ?config(username, Config),
-    Res2 = navidb:get(accounts, {username, Username}, {filter, [id, 'password']}),
+    Res2 = navidb:get(accounts, {username, Username}, {filter, ['_id', 'password']}),
     ?assertMatch(#{
                     <<"username">> := Username,
                     <<"groups">>   := [],
                     <<"skeys">>    := []
                 }, Res2),
-    ?assertException(error, {badmatch, _Reason}, #{id := _} = Res2),
+    ?assertException(error, {badmatch, _Reason}, #{'_id' := _} = Res2),
     ?assertException(error, {badmatch, _Reason}, #{password := _} = Res2),
     ok.
 
 system(Config) ->
     Username = ?config(username, Config),
-    #{<<"id">> := Skey} = helper:fake_system(),
+    #{<<"_id">> := Skey} = helper:fake_system(),
     #{<<"skeys">> := SkeysBefore} = navidb:get(accounts, {username, Username}),
     ?assertEqual(false, lists:member(Skey, SkeysBefore)),
     {ok, {true, _}} = navidb:update(accounts, #{<<"username">> => Username}, #{<<"$addToSet">> => #{<<"skeys">> => Skey}}),

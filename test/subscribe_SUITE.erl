@@ -26,7 +26,7 @@ account(_) ->
     Listener = spawn(fun() -> listener(Self, Username) end),
     navidb_subs:watch(Listener),
     ?assertEqual({ok, [Listener]}, navidb_subs:pids()),
-    Resource = #{<<"resource">> => <<"account">>, <<"id">> => Username},
+    Resource = #{<<"resource">> => <<"account">>, <<"_id">> => Username},
     Keys = [tokey(Resource)],
     navidb_subs:subscribe(Listener, Keys),
     timer:sleep(100),
@@ -45,7 +45,7 @@ account(_) ->
     navidb:remove(accounts, #{username => Username}),
     ok.
 
-tokey(#{<<"resource">> := Resource, <<"id">> := Id}) ->
+tokey(#{<<"resource">> := Resource, <<"_id">> := Id}) ->
     <<Resource/binary, ":", Id/binary>>.
 
 wait_echo(Resource, Id) ->

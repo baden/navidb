@@ -16,7 +16,7 @@ fake_account(Username) when is_binary(Username) ->
     Salt = random:uniform(trunc(math:pow(2,64))),
     Email = <<(random_string())/binary, "@", (random_string())/binary>>,
     #{
-        <<"id">>       => base64:encode(<<Username/binary, $:, Salt:64>>),
+        <<"_id">>       => base64:encode(<<Username/binary, $:, Salt:64>>),
         <<"username">> => Username,
         <<"password">> => random_string(),
         <<"title">>    => Username,
@@ -35,7 +35,7 @@ fake_system(Imei) when is_binary(Imei) ->
     [ImeiOnly | _LastImei] = string:tokens(SImei, "-"),     % Выделим только IMEI, без кода
     LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
     #{
-        <<"id">>      => Skey,
+        <<"_id">>      => Skey,
         <<"imei">>    => Imei,                                % IMEI
         <<"date">>    => unixtime(),                          % Дата/время первого выхода на связь
         <<"phone">>   => <<>>,                                % Номер SIM-карты

@@ -63,7 +63,9 @@ stop(_) ->
 %
 -spec insert(Collection :: atom(), Document :: document()) -> document().
 insert(Collection, Document) ->
-    {ok, {{true, _}, Result}} = mongo_worker:insert(collection_name(Collection), Document),
+    Doc = mongo_worker:insert(collection_name(Collection), Document),
+    ct:pal("insert Doc = ~p", [Doc]),
+    {ok, {{true, #{<<"n">> := 1}}, Result}} = Doc,
     Result.
 
 % TODO: Добавить опциональные ключи для запросов через кеш
@@ -74,7 +76,7 @@ get(Collection, Keys) when is_list(Keys) ->
 
     lists:reverse(lists:foldl(
         fun(Key, Acc) ->
-            Record = case mongo_worker:find_one(collection_name(Collection), #{id => Key}) of
+            Record = case mongo_worker:find_one(collection_name(Collection), #{<<"_id">> => Key}) of
                 {error, _} ->    % Записи о системе еще нет.
                     #{
                         id    => Key,
@@ -99,7 +101,7 @@ get(command, Skey) ->
 % get(_Collection, Selector) when is_map(Selector) ->
 %     erlang:error(badarg);
 get(Collection, Key) when is_binary(Key) ->
-    get(Collection, #{<<"id">> => Key});
+    get(Collection, #{<<"_id">> => Key});
 
 get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
     case mongo_worker:find_one(collection_name(Collection), Selector) of
@@ -111,8 +113,8 @@ get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
 
 % По идее это тоже нужно перенести в navidb
 % Присобачить к записи системы виртуальное поле dynamic
-% prepare_doc(systems, Document = #{<<"id">> := Skey}) ->
-prepare_doc(systems, Document = #{<<"id">> := Skey}) ->
+% prepare_doc(systems, Document = #{<<"_id">> := Skey}) ->
+prepare_doc(systems, Document = #{<<"_id">> := Skey}) ->
     case navidb:get(dynamic, Skey) of
         {ok, Dynamic} ->
             % [{dynamic, Dynamic}] ++ Document;
@@ -174,7 +176,7 @@ get(system, Skey, cached) ->
             LastImei = list_to_binary(string:right(ImeiOnly, 6)),   % Возьмом последние 6 знаков
 
             #{
-                <<"id">>      => Skey,
+                <<"_id">>      => Skey,
                 <<"imei">>    => Imei,                                % IMEI
                 <<"date">>    => unixtime(),                          % Дата/время первого выхода на связь
                 <<"phone">>   => <<>>,                                % Номер SIM-карты
@@ -200,17 +202,26 @@ get(system, Skey, cached) ->
 
 
 update(Collection, Selector = {Field, Key}, Document) ->
-    Res = mongo_worker:update(collection_name(Collection), Selector, Document, true, false),
+    Res = mongo_worker:update(collection_name(Collection), #{Field => Key}, Document, true, false),
     navidb_subs:broadcast(name(Collection), Key, null),
     navidb_cache:delete(collection_name(Collection), Field, Key),
     Res;
 
 % Important! Ignore other fields!
-update(Collection, #{<<"id">> := Key}, Document) ->
-    update(Collection, {id, Key}, Document);
+% update(Collection, #{<<"_id">> := Key}, Document) ->
+%     update(Collection, {<<"id">>, Key}, Document);
 
+% todo:
+% Мне кажется тот проверка на один ключ в селекторе лишняя. Подозреваю что очищать кеш нужно всегда.
 update(Collection, Selector, Document) when is_map(Selector)->
-    mongo_worker:update(collection_name(Collection), Selector, Document);
+    case maps:size(Selector) of
+        1 ->
+            [Field] = maps:keys(Selector),
+            [Key] = maps:values(Selector),
+            update(Collection, {Field, Key}, Document);
+        _ ->
+            mongo_worker:update(collection_name(Collection), Selector, Document)
+    end;
     % Fields = maps:keys(Selector),
     % case length(Fields) of
     %     1 ->
@@ -221,10 +232,10 @@ update(Collection, Selector, Document) when is_map(Selector)->
     % end;
 
 update(Collection, Key, Document) ->
-    update(Collection, {id, Key}, Document).
+    update(Collection, {<<"_id">>, Key}, Document).
 
 set(Collection, {Field, Key}, Document) ->
-    Res = mongo_worker:update(collection_name(Collection), {Field, Key}, #{<<"$set">> => Document}, true, false),
+    Res = mongo_worker:update(collection_name(Collection), #{Field => Key}, #{<<"$set">> => Document}, true, false),
     navidb_subs:broadcast(name(Collection), Key, Document),
     navidb_cache:delete(collection_name(Collection), Field, Key),
     Res;
@@ -237,7 +248,7 @@ set(command, Skey, Data) ->
     navidb_cache:put(command, Skey, Data);
 
 set(Collection, Key, Document) ->
-    set(Collection, {id, Key}, Document).
+    set(Collection, {<<"_id">>, Key}, Document).
 
 remove(Collection, Selector, {flush, {gps, Skey}}) ->
     navidb_gpsdb:flush(Skey),

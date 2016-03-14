@@ -38,7 +38,7 @@ get_cached(Collection, {Field, Key}, Callback) ->
         {ok, MemDocument} ->
             MemDocument;
         {error, notfound} ->
-            case mongo_worker:find_one(Collection, {Field, Key}) of
+            case mongo_worker:find_one(Collection, #{Field => Key}) of
                 {error, _} ->
                     ct:pal("Key = ~p~n", [Key]),
                     NewDocument = Callback(),
@@ -55,7 +55,7 @@ get_cached(Collection, {Field, Key}, Callback) ->
     end;
 
 get_cached(Name, Key, Callback) ->
-    get_cached(Name, {id, Key}, Callback).
+    get_cached(Name, {<<"_id">>, Key}, Callback).
 
 
 

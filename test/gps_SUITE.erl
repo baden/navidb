@@ -22,12 +22,12 @@ end_per_suite(Config) ->
     ok.
 
 init_per_testcase(_Case, Config) ->
-    #{<<"id">> := Skey} = _System = helper:fake_system(),
+    #{<<"_id">> := Skey} = _System = helper:fake_system(),
 	[{skey, Skey} | Config].
 
 end_per_testcase(_Case, Config) ->
     Skey = ?config(skey, Config),
-    navidb:remove(systems, #{id => Skey}),
+    navidb:remove(systems, #{<<"_id">> => Skey}),
 	ok.
 
 test1(Config) ->
@@ -61,9 +61,9 @@ badkey("18", Key) -> {error, {badkey, Key}}.
 
 test2(_Config) ->
 
-    #{<<"id">> := Skey1} = helper:fake_system(),
-    #{<<"id">> := Skey2} = helper:fake_system(),
-    #{<<"id">> := Skey3} = helper:fake_system(),
+    #{<<"_id">> := Skey1} = helper:fake_system(),
+    #{<<"_id">> := Skey2} = helper:fake_system(),
+    #{<<"_id">> := Skey3} = helper:fake_system(),
 
     ok = navidb_gpsdb:save(Skey1, 10, <<"fake-data1">>),
     ok = navidb_gpsdb:save(Skey2, 10, <<"fake-data2">>),
@@ -79,9 +79,9 @@ test2(_Config) ->
     nodata = navidb_gpsdb:get(Skey2),
     nodata = navidb_gpsdb:get(Skey3),
 
-    navidb:remove(systems, #{<<"id">> => Skey1}),
-    navidb:remove(systems, #{<<"id">> => Skey2}),
-    navidb:remove(systems, #{<<"id">> => Skey3}),
+    navidb:remove(systems, #{<<"_id">> => Skey1}),
+    navidb:remove(systems, #{<<"_id">> => Skey2}),
+    navidb:remove(systems, #{<<"_id">> => Skey3}),
     ok.
 
 remove(Config) ->

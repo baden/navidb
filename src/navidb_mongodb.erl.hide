@@ -207,7 +207,7 @@ key_to_db(Keys) when is_list(Keys) ->
         Keys),
     Rest;
 
-key_to_db(<<"id">>) ->
+key_to_db(<<"_id">>) ->
     '_id';
 
 key_to_db(Key) when is_binary(Key) ->
