@@ -82,6 +82,13 @@ command(_) ->
     ok.
 
 system_cached(_) ->
+    Skey1 = <<"eDA2MFM5YmNVUitCQS9reGxBbW1YQT09">>,
+    CachedSys = navidb:get(system, Skey1, cached),
+    ct:pal("CachedSys = ~p~n", [CachedSys]),
+    Doc = navidb:get(systems, Skey1),
+    ct:pal("Doc = ~p~n", [Doc]),
+    ?assertMatch(#{<<"id">> := Skey1}, Doc),
+
     #{<<"id">> := Skey, <<"imei">> := Imei} = _System = helper:fake_system(),
     % Read over cache
     ?assertMatch(#{<<"imei">> := Imei}, navidb:get(system, Skey, cached)),

@@ -67,7 +67,7 @@ save(Skey, Hour, Data) ->
 
                 OldHour ->  % Запись в другой час
                     % Сначала сохраним данные из прошлого часа
-                    {ok, {true, Result}} = mongo_worker:update(
+                    {ok, {true, _}} = mongo_worker:update(
                         <<"navicc_gps">>, %?DB_GPS,
                         #{<<"system">> => Skey, <<"hour">> => OldHour},
                         #{<<"$push">> => #{<<"data">> => {bin, bin, Record#memrecord.data}}},

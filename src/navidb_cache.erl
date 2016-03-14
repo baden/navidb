@@ -40,8 +40,11 @@ get_cached(Collection, {Field, Key}, Callback) ->
         {error, notfound} ->
             case mongo_worker:find_one(Collection, {Field, Key}) of
                 {error, _} ->
+                    ct:pal("Key = ~p~n", [Key]),
                     NewDocument = Callback(),
-                    mongo_worker:insert(Collection, NewDocument),
+                    ct:pal("NewDocument = ~p~n", [NewDocument]),
+                    Res = mongo_worker:insert(Collection, NewDocument),
+                    ct:pal("mongo_worker:insert Res = ~p~n", [Res]),
                     % CahceDocument = mongo_worker:bson_to_json(NewDocument),
                     put_(?MEMCACHE_TABLE, Id, NewDocument),
                     NewDocument;

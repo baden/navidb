@@ -17,6 +17,8 @@
 %%% @todo Testing TODO notes.
 -module(navidb).
 
+-export([start/0, start/2, stop/0, stop/1]).
+
 -export([
          insert/2, get/2, get/3, update/3, set/3, remove/2, remove/3, delete/2,
          get_gps_hours/3, get_logs/3, get_geos/3, get_all_systems/0
@@ -26,6 +28,35 @@
 % API
 
 -type document() :: map().
+
+
+%% @spec start() -> ok
+%% @doc Start the pymwyfa_web server.
+% Manual start over -s navidb
+% Useful for manual testing over make test-shell
+start() ->
+    application:load(navidb),
+
+    {ok, Apps} = application:get_key(navidb, applications),
+    [application:ensure_all_started(App) || App <- Apps],
+
+    ok = application:start(navidb),
+    ok.
+
+start(normal, []) ->
+    ok.
+
+%% @spec stop() -> ok
+%% @doc Stop the pymwyfa_web server.
+stop() ->
+    Res = application:stop(navidb),
+    % % application:stop(ssl),
+    % % application:stop(public_key),
+    % application:stop(crypto),
+    Res.
+
+stop(_) ->
+    ok.
 
 
 %% @doc Insert document
@@ -133,6 +164,7 @@ get(Collection, Selector, {filter, Fields}) ->
 
 get(system, Skey, cached) ->
     Imei = base64:decode(Skey),
+    ct:pal("get(system, ~p, cached)", [Skey]),
     navidb_cache:get_cached(
         collection_name(systems),
         Skey,
