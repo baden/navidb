@@ -49,7 +49,8 @@ test1(Config) ->
     Status1 = navidb_gpsdb:info(),
     case ?config(otp_release, Config) of
         "17" -> ?assertException(error, bad_key, maps:get(Skey, Status1));
-        "18" -> ?assertException(error, {badkey, _}, maps:get(Skey, Status1))
+        "18" -> ?assertException(error, {badkey, _}, maps:get(Skey, Status1));
+        "19" -> ?assertException(error, {badkey, _}, maps:get(Skey, Status1))
     end,
 
     % ?assertException(error, badkey(?config(otp_release, Config), _), maps:get(Skey, Status1)),
