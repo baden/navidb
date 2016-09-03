@@ -13,7 +13,7 @@ fake_account() ->
     fake_account(random_string()).
 
 fake_account(Username) when is_binary(Username) ->
-    Salt = random:uniform(trunc(math:pow(2,64))),
+    Salt = rand:uniform(trunc(math:pow(2,64))),
     Email = <<(random_string())/binary, "@", (random_string())/binary>>,
     #{
         id       => base64:encode(<<Username/binary, $:, Salt:64>>),
@@ -58,7 +58,7 @@ fake_system(Imei) when is_binary(Imei) ->
     }.
 
 random_string() ->
-    base64:encode(crypto:rand_bytes(16)).
+    base64:encode(crypto:strong_rand_bytes(16)).
 
 unixtime() ->
         {A, B, _} = os:timestamp(),

@@ -17,3 +17,5 @@ navidb.d
 .erlang.mk/
 kerl
 rebar
+xrefr
+elvis

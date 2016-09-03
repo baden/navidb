@@ -34,9 +34,12 @@
 insert(Collection, Document) ->
     navidb_mongodb:insert(collection_name(Collection), Document).
 
+-type collection() :: atom.
+-type selector() :: binary() | tuple() | list(binary()).
+
 % TODO: Добавить опциональные ключи для запросов через кеш
 % get(Collection, Selector, Options) ->
--spec get(Collection :: atom(), Keys :: list(binary())) -> [document()].
+-spec get(collection(), selector()) -> [document()].
 get(Collection, Keys) when is_list(Keys) ->
     % TODO: Заменить на один запрос для списка.
 
@@ -122,6 +125,7 @@ remquotes(In) ->
 % Если не существует, то создадим запись и сохраним в оперативной памяти.
 
 % OPTIONS скорее всего информация о системе не требуется.
+-spec get(collection(), selector(), {filter, _} | cached) -> [document()].
 get(Collection, Selector, {filter, Fields}) ->
     maps:without(Fields, get(Collection, Selector));
 
@@ -160,7 +164,7 @@ get(system, Skey, cached) ->
         end
     ).
 
-
+-spec update(collection(), selector(), {filter, _} | cached) -> [document()].
 update(Collection, Selector = {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), Selector, Document, true),
     navidb_subs:broadcast(name(Collection), Key, null),
@@ -184,6 +188,7 @@ update(Collection, Selector, Document) when is_map(Selector)->
 update(Collection, Key, Document) ->
     update(Collection, {id, Key}, Document).
 
+-spec set(collection(), selector(), document()) -> any().
 set(Collection, {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), {Field, Key}, #{'$set' => Document}, true),
     navidb_subs:broadcast(name(Collection), Key, Document),
@@ -200,14 +205,17 @@ set(command, Skey, Data) ->
 set(Collection, Key, Document) ->
     set(Collection, {id, Key}, Document).
 
+-spec remove(collection(), selector(), {flush, {gps, binary()}}) -> any().
 remove(Collection, Selector, {flush, {gps, Skey}}) ->
     navidb_gpsdb:flush(Skey),
     remove(Collection, Selector).
 
 % TODO: Обратить внимание на кеш
+-spec remove(collection(), selector()) -> any().
 remove(Collection, Selector) ->
     navidb_mongodb:delete(collection_name(Collection), Selector).
 
+-spec delete(collection(), binary()) -> any().
 delete(command, Skey) ->
     navidb_cache:delete(command, Skey).
 
@@ -227,6 +235,7 @@ delete(command, Skey) ->
 %     maps:from_list(bson:fields(Document)).
 
 % TODO: Не самое элегантное решение. Сделано пока абыкак.
+-spec get_gps_hours(binary(), non_neg_integer(), non_neg_integer()) -> document().
 get_gps_hours(Skey, From, To) ->
     % !!! Этo не может быть map, так как важен порядок сделования полей (недоработка mongoDB)
     Pipeline = [
@@ -262,6 +271,7 @@ get_gps_hours(Skey, From, To) ->
     Hours ++ MemHours.
 
 % TODO: Не самое элегантное решение. Сделано пока абыкак.
+-spec get_logs(binary(), non_neg_integer(), non_neg_integer()) -> document().
 get_logs(Skey, Count, Skip) ->
     Pipeline = [
         {'$match', {system, Skey, dt, {'$lt', Skip}}},
@@ -270,6 +280,7 @@ get_logs(Skey, Count, Skip) ->
     ],
     navidb_mongodb:aggregate(collection_name(logs), Pipeline).
 
+-spec get_geos(binary(), non_neg_integer(), non_neg_integer()) -> document().
 get_geos(Skey, From, To) ->
     Pipeline = [
         {'$match', {
@@ -294,6 +305,7 @@ get_geos(Skey, From, To) ->
             {ok, Flat}
     end.
 
+-spec get_all_systems() -> document().
 get_all_systems() ->
     Pipeline = [
         {'$project', {
