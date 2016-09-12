@@ -25,7 +25,6 @@
 
 % API
 
--type document() :: map().
 
 
 %% @doc Insert document
@@ -34,7 +33,9 @@
 insert(Collection, Document) ->
     navidb_mongodb:insert(collection_name(Collection), Document).
 
--type collection() :: atom.
+% -type collection() :: atom.
+-type collection() :: accounts | groups | systems | params | logs | gps | 'system' | 'command' | 'dynamic'.
+-type document() :: map().
 -type selector() :: binary() | tuple() | list(binary()).
 
 % TODO: Добавить опциональные ключи для запросов через кеш
@@ -125,7 +126,9 @@ remquotes(In) ->
 % Если не существует, то создадим запись и сохраним в оперативной памяти.
 
 % OPTIONS скорее всего информация о системе не требуется.
--spec get(collection(), selector(), {filter, _} | cached) -> [document()].
+% -spec get(collection(), selector(), {filter, _} | cached) -> [document()].
+% -spec get('system' | 'command' | 'dynamic', binary() | [1..255], 'cached') -> any().
+-spec get(collection(), binary() | [1..255], 'cached') -> any().
 get(Collection, Selector, {filter, Fields}) ->
     maps:without(Fields, get(Collection, Selector));
 
@@ -188,6 +191,7 @@ update(Collection, Selector, Document) when is_map(Selector)->
 update(Collection, Key, Document) ->
     update(Collection, {id, Key}, Document).
 
+% -spec set(collection(), selector(), document()) -> any().
 -spec set(collection(), selector(), document()) -> any().
 set(Collection, {Field, Key}, Document) ->
     Res = navidb_mongodb:update(collection_name(Collection), {Field, Key}, #{'$set' => Document}, true),
