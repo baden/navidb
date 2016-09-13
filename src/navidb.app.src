@@ -7,10 +7,11 @@
     {applications, [
                     kernel,
                     stdlib,
-                    mnesia,
+                    % mnesia,
                     poolboy,
                     mongodb
                     ]},
+    {included_applications, [mnesia]},
     {start_phases, [{init,[]}]},
     {mod, { navidb_app, []}},
     {env, [

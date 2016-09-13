@@ -52,7 +52,7 @@ include erlang.mk
 # 	| fgrep --invert-match --file .dialyzer.ignore
 
 test-shell: app
-	erl -pa ebin -pa deps/*/ebin -pa test -s navipoint -config test/test.config
+	erl -pa ebin -pa deps/*/ebin -pa test -config test/test.config
 	# erl -pa ebin -pa deps/*/ebin -pa test -s sync -s navipoint -config test/test.config
 
 typer::
