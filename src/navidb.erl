@@ -243,26 +243,26 @@ delete(command, Skey) ->
 get_gps_hours(Skey, From, To) ->
     % !!! Этo не может быть map, так как важен порядок сделования полей (недоработка mongoDB)
     Pipeline = [
-        {'$match', {
-            system, Skey,
-            hour, {
-                '$gte', From,
-                '$lte', To
+        {<<"$match">>, {
+            <<"system">>, Skey,
+            <<"hour">>, {
+                <<"$gte">>, From,
+                <<"$lte">>, To
             }
         }},
-        {'$group', {
-            '_id', 0, hours, {
-                '$addToSet', <<"$hour">>
+        {<<"$group">>, {
+            <<"_id">>, 0, <<"hours">>, {
+                <<"$addToSet">>, <<"$hour">>
             }
         }}
     ],
-    Hours = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
+    Hours = case navidb_mongodb:aggregate(<<"navicc_gps">>, Pipeline) of
         [] ->
             [];
         [Doc] ->
             % TODO: maps:get(hours) ?
             % bson:at(hours, Doc)
-            maps:get(hours, Doc)
+            maps:get(<<"hours">>, Doc)
     end,
 
     % Добавим час, который в mnesia
@@ -278,28 +278,31 @@ get_gps_hours(Skey, From, To) ->
 -spec get_logs(binary(), non_neg_integer(), non_neg_integer()) -> document().
 get_logs(Skey, Count, Skip) ->
     Pipeline = [
-        {'$match', {system, Skey, dt, {'$lt', Skip}}},
-        {'$sort', {dt, -1}},
-        {'$limit', Count}
+        {<<"$match">>, {<<"system">>, Skey, <<"dt">>, {<<"$lt">>, Skip}}},
+        {<<"$sort">>, {<<"dt">>, -1}},
+        {<<"$limit">>, Count}
     ],
     navidb_mongodb:aggregate(collection_name(logs), Pipeline).
 
 -spec get_geos(binary(), non_neg_integer(), non_neg_integer()) -> document().
 get_geos(Skey, From, To) ->
     Pipeline = [
-        {'$match', {
-            system, Skey,
-            hour, {'$gte', From, '$lte', To}
+        {<<"$match">>, {
+            <<"system">>, Skey,
+            <<"hour">>, {<<"$gte">>, From, <<"$lte">>, To}
         }},
-        {'$sort', {hour, 1}},
-        {'$group', {'_id', 0, data, {'$push', <<"$data">>}}}
+        {<<"$sort">>, {<<"hour">>, 1}},
+        {<<"$group">>, {<<"_id">>, 0, <<"data">>, {<<"$push">>, <<"$data">>}}}
     ],
 
-    Flat = case navidb_mongodb:aggregate(collection_name(gps), Pipeline) of
+    Flat = case navidb_mongodb:aggregate(<<"navicc_gps">>, Pipeline) of
         [] ->
             <<"">>;
-        [#{data := RawData}] ->
-            list_to_binary(RawData)
+        [#{<<"data">> := [[{bin, bin, RawData}]]}] ->
+            ct:log("RawData=~p", [RawData]),
+            % {bin, bin, Bin} = RawData,
+            RawData
+            % list_to_binary(RawData)
     end,
 
     case navidb_gpsdb:get(Skey) of
@@ -312,12 +315,12 @@ get_geos(Skey, From, To) ->
 -spec get_all_systems() -> document().
 get_all_systems() ->
     Pipeline = [
-        {'$project', {
-            '_id', 1, imei, 1, date, 1, hwid, 1, swid, 1
+        {<<"$project">>, {
+            <<"_id">>, 1, <<"imei">>, 1, <<"date">>, 1, <<"hwid">>, 1, <<"swid">>, 1
         }},
-        {'$sort', {date, 1}}
+        {<<"$sort">>, {<<"date">>, 1}}
     ],
-    navidb_mongodb:aggregate(collection_name(systems), Pipeline).
+    navidb_mongodb:aggregate(<<"navicc_systems">>, Pipeline).
     % case navidb_mongodb:aggregate(collection_name(systems), Pipeline) of
     %     [] ->
     %         [];

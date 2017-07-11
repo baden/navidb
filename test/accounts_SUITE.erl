@@ -5,16 +5,18 @@
 -compile(export_all).
 
 all() -> [get, system].
+% all() -> [].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
-    {ok, Modules} = application:ensure_all_started(navidb),
-    [{modules, Modules} | Config].
+    {ok, _Modules} = application:ensure_all_started(navidb),
+    % [{modules, Modules} | Config].
+    Config.
 
 end_per_suite(Config) ->
     Modules = ?config(modules, Config),
-    [application:stop(Module) || Module <- lists:reverse(Modules)],
-    application:unload(navidb),
+    % [application:stop(Module) || Module <- lists:reverse(Modules)],
+    % application:unload(navidb),
     error_logger:tty(true),
     ok.
 

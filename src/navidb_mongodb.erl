@@ -60,6 +60,7 @@ insert(Coll, Doc) ->
 %     mongo_api:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
 
 update(Coll, Selector, Doc, Upsert) ->
+    ct:log("update(~p, ~p, ~p, ~p)", [Coll, Selector, Doc, Upsert]),
     {true, #{<<"n">> := 1}} =
         mongo_api:update(?POOL_NAME, Coll, Selector, Doc, #{upsert => Upsert}),
     ok.
@@ -69,11 +70,10 @@ delete(Coll, Selector) ->
 
 find_one(Coll, Selector) ->
     Ans = mongo_api:find_one(?POOL_NAME, Coll, map_to_bson(Selector), {}),
-    ct:log("Ans=~p", [Ans]),
     % Ans.
     case Ans of
-        #{} -> Ans;
-        _ -> #{error => no_entry}
+        undefined -> #{error => no_entry};
+        #{} -> Ans
     end.
     % case Ans of
     %     {} -> #{error => no_entry};
@@ -81,17 +81,26 @@ find_one(Coll, Selector) ->
     % end.
 
 aggregate(Coll, Pipeline) ->
+    ct:log("aggregate(~p, ~p)", [Coll, Pipeline]),
     Cmd = {
-        aggregate, atom_to_binary(Coll, latin1),
+        % aggregate, atom_to_binary(Coll, latin1),
+        aggregate, Coll,
         % pipeline, map_to_bson(Pipeline)
         pipeline, Pipeline
     },
 
     % Original (not implemented yet)
     % Res = mongo_api:command(?POOL_NAME, Cmd),
-    {Res} = mongo_api:find_one(?POOL_NAME, '$cmd', Cmd),
-    _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
-    bson_to_map(bson:at(result, Res)).
+    Res = mongo_api:find_one(?POOL_NAME, <<"$cmd">>, Cmd, {}),
+    ct:log("Res=~p", [Res]),
+    case Res of
+        undefined -> #{error => no_entry};
+        #{<<"ok">> := 1.0, <<"result">> := Result} ->
+            Result
+        % Any -> ct:log("Any=~p", [Any])
+    end.
+    % _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
+    % bson_to_map(bson:at(result, Res)).
 
 ensure_index(Coll, IndexSpec) ->
     mongo_api:ensure_index(?POOL_NAME, Coll, IndexSpec).
