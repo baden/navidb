@@ -1,12 +1,14 @@
 language: erlang
 otp_release:
-  - 17.5
-  - 18.3
+  # - 17.5
+  # - 18.3
   - 19.0
+  - 20.0
 script: "sleep 5 && make tests"
 branches:
   only:
     - master
+    - refresh2017
 notifications:
   email:
     - baden.i.ua@gmail.com

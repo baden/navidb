@@ -7,7 +7,8 @@
 all() -> [account].
 
 init_per_suite(Config) ->
-    error_logger:tty(false),
+    io:format("init_per_suite(~p)", [Config]),
+    % error_logger:tty(false),
     {ok, Modules} = application:ensure_all_started(navidb),
     [{modules, Modules} | Config].
 

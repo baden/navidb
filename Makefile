@@ -23,8 +23,11 @@ PLT_APPS = crypto public_key
 
 # Dependencies.
 
+
 DEPS = mongodb
-dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
+# dep_mongodb = git git://github.com/baden/mongodb-erlang.git refresh
+# 8f751af or 8f751af18b9ce1c12f36355cb7a961efdfc718ee
+dep_mongodb = git https://github.com/comtihon/mongodb-erlang v3.0.2
 
 TEST_DEPS = ct_helper xref_runner
 dep_ct_helper = git https://github.com/ninenines/ct_helper master

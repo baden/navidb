@@ -10,8 +10,10 @@ suite() ->
 all() -> [test1].
 
 init_per_suite(Config) ->
-    error_logger:tty(false),
+    io:format("init_per_suite(~p)", [Config]),
+    % error_logger:tty(false),
     {ok, Modules} = application:ensure_all_started(navidb),
+    io:format("AFTER init_per_suite(~p)", [Config]),
     [{modules, Modules} | Config].
 
 end_per_suite(Config) ->
