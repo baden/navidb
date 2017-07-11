@@ -20,6 +20,7 @@ end_per_suite(Config) ->
 
 init_per_testcase(_Case, Config) ->
     #{username := Username} = Account = helper:fake_account(),
+    % ct:log("Account=~p", [Account]),
     navidb:insert(accounts, Account),
     [{username, Username} | Config].
 
@@ -31,10 +32,12 @@ end_per_testcase(_Case, Config) ->
 get(Config) ->
     Username = ?config(username, Config),
     Res2 = navidb:get(accounts, {username, Username}, {filter, [id, 'password']}),
+    ct:log("Res2=~p", [Res2]),
+    ct:log("Username=~p", [Username]),
     ?assertMatch(#{
-                    username := Username,
-                    groups   := [],
-                    skeys    := []
+                    <<"username">> := Username,
+                    <<"groups">>   := [],
+                    <<"skeys">>    := []
                 }, Res2),
     ?assertException(error, {badmatch, _Reason}, #{id := _} = Res2),
     ?assertException(error, {badmatch, _Reason}, #{password := _} = Res2),
@@ -43,9 +46,9 @@ get(Config) ->
 system(Config) ->
     Username = ?config(username, Config),
     #{id := Skey} = helper:fake_system(),
-    #{skeys := SkeysBefore} = navidb:get(accounts, {username, Username}),
+    #{<<"skeys">> := SkeysBefore} = navidb:get(accounts, {username, Username}),
     ?assertEqual(false, lists:member(Skey, SkeysBefore)),
-    ok = navidb:update(accounts, #{username => Username}, {'$addToSet', {skeys, Skey}}),
-    #{skeys := SkeysAfter} = navidb:get(accounts, {username, Username}),
+    ok = navidb:update(accounts, #{<<"username">> => Username}, {<<"$addToSet">>, {skeys, Skey}}),
+    #{<<"skeys">> := SkeysAfter} = navidb:get(accounts, {username, Username}),
     ?assertEqual(true, lists:member(Skey, SkeysAfter)),
     ok.

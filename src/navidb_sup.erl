@@ -44,11 +44,12 @@ init([]) ->
     % end, Pools),
     % MondoDB     = ?CHILD(navidb_mongodb, worker),
 
-    MongoPool = navidb_mongodb:child_spec(),
+    % MongoPool = navidb_mongodb:child_spec(),
+    ok = navidb_mongodb:init_pool(),
 
     % PoolArgs = [{name, {local, mc_worker}}, {worker_module, mc_worker}, {size, 5}, {max_overflow, 10}],
     % WorkerArgs = [{"localhost", 27017, #conn_state{database = <<"erlnavicc">>}}, []],
-    % MongoPool = poolboy:child_spec(navidb_mongo_pool, PoolArgs, WorkerArgs),
+    % MongoPool = poolboy:child_spec(navidb_mongo_api, PoolArgs, WorkerArgs),
 
     % PoolArgs = [
     %     {name, {local, pool1}},
@@ -60,5 +61,6 @@ init([]) ->
 
     % {ok, { {one_for_one, 5, 10}, [MongoDBPool, Worker, GPSDB, Websocket]} }.
     % {ok, { {one_for_one, 5, 10}, [Worker, GPSDB, Websocket, MongoPool]} }.
-    {ok, { {one_for_one, 5, 10}, [GPSDB, Subscriber, MongoPool]} }.
+    % {ok, { {one_for_one, 5, 10}, [GPSDB, Subscriber, MongoPool]} }.
+    {ok, { {one_for_one, 5, 10}, [GPSDB, Subscriber]} }.
     % {ok, { {one_for_one, 5, 10}, [MondoDB, Worker, GPSDB, Websocket] ++ PoolSpecs} }.

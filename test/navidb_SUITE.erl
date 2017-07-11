@@ -30,7 +30,7 @@ test1(_) ->
     % Check modules is load
     ?assertNotEqual(undefined, whereis(navidb_gpsdb)),
     ?assertNotEqual(undefined, global:whereis_name(navidb_subs)), % Зарегестрирован как глобальный модуль
-    ?assertNotEqual(undefined, whereis(navidb_mongo_pool)), % Пул воркеров к базе данных
-    ?assertEqual({ready,5,0,0}, poolboy:status(navidb_mongo_pool)),
+    ?assertNotEqual(undefined, whereis(navidb_mongo_api)), % Пул воркеров к базе данных
+    ?assertEqual({ready,5,0,0}, poolboy:status(navidb_mongo_api)),
     timer:sleep(200),  % Ensure indexes was created
     ok.

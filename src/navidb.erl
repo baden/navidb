@@ -329,12 +329,12 @@ get_all_systems() ->
 
 % Private
 
-collection_name(accounts)   -> navicc_accounts;
-collection_name(groups)     -> navicc_groups;
-collection_name(systems)    -> navicc_systems;
-collection_name(params)     -> navicc_params;
-collection_name(logs)       -> navicc_logs;
-collection_name(gps)        -> navicc_gps.
+collection_name(accounts)   -> <<"navicc_accounts">>;
+collection_name(groups)     -> <<"navicc_groups">>;
+collection_name(systems)    -> <<"navicc_systems">>;
+collection_name(params)     -> <<"navicc_params">>;
+collection_name(logs)       -> <<"navicc_logs">>;
+collection_name(gps)        -> <<"navicc_gps">>.
 
 % Соответствие коллекции имени ресурса в подписчике
 name(accounts) -> account;

@@ -13,7 +13,7 @@ start(_StartType, _StartArgs) ->
     navidb_sup:start_link().
 
 start_phase(init, _Type, _Args) ->
-    % mongo_pool:start_link(navidb_mongo_pool, 5, <<"localhost">>, 27017, <<"erlnavicc">>, 10),
+    % mongo_api:start_link(navidb_mongo_api, 5, <<"localhost">>, 27017, <<"erlnavicc">>, 10),
     ok = createindexes(),
     ok.
 

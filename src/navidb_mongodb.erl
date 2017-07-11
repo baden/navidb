@@ -3,7 +3,8 @@
 
 
 -export([
-        child_spec/0,
+        % child_spec/0,
+        init_pool/0,
         insert/2,
         % update/3,
         update/4,
@@ -18,35 +19,66 @@
         % proplist_to_doc/1
         ]).
 
--define(POOL_NAME, navidb_mongo_pool).
+-define(POOL_NAME, navidb_mongo_api).
 
-child_spec() ->
+init_pool() ->
+    % {Mongo, Db} = app_ctl:get_cfg(mongo),
     {ok, PoolConfig} = application:get_env(navidb, connect_pool),
     PoolSize         = proplists:get_value(size, PoolConfig),
     MaxOverflow      = proplists:get_value(max_overflow, PoolConfig),
-    Server     = application:get_env(navidb, hostname, "localhost"),
-    Port       = application:get_env(navidb, port, 27017),
+    Server     = application:get_env(navidb, hostname, "localhost:27017"),
+    % Port       = application:get_env(navidb, port, 27017),
     {ok, Database}   = application:get_env(navidb, database),
+    Options = [
+        {name, navidb_pool},
+        {pool_size, PoolSize},
+        {max_overflow, MaxOverflow},
+        {register, ?POOL_NAME}
+        ],
+    WorkOpts = [{database, Database}],
+    {ok, _Pid} = mongo_api:connect(single, Server, Options, WorkOpts),
+    ok.
 
-    mongo_pool:child_spec(?POOL_NAME, PoolSize, Server, Port, Database, MaxOverflow).
+% child_spec() ->
+%     {ok, PoolConfig} = application:get_env(navidb, connect_pool),
+%     PoolSize         = proplists:get_value(size, PoolConfig),
+%     MaxOverflow      = proplists:get_value(max_overflow, PoolConfig),
+%     Server     = application:get_env(navidb, hostname, "localhost"),
+%     Port       = application:get_env(navidb, port, 27017),
+%     {ok, Database}   = application:get_env(navidb, database),
+%
+%     mongo_api:child_spec(?POOL_NAME, PoolSize, Server, Port, Database, MaxOverflow).
 
 insert(Coll, Doc) ->
-    bson_to_map(mongo_pool:insert(?POOL_NAME, Coll, map_to_bson(Doc))).
+    Ans = mongo_api:insert(?POOL_NAME, Coll, map_to_bson(Doc)),
+    ct:log("Ans=~p", [Ans]),
+    {{true, #{<<"n">> := 1}}, Answer } =
+        Ans,
+    bson_to_map(Answer).
 
 % update(Coll, Selector, Doc) ->
-%     mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
+%     mongo_api:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc)).
 
 update(Coll, Selector, Doc, Upsert) ->
-    mongo_pool:update(?POOL_NAME, Coll, map_to_bson(Selector), map_to_bson(Doc), Upsert).
+    {true, #{<<"n">> := 1}} =
+        mongo_api:update(?POOL_NAME, Coll, Selector, Doc, #{upsert => Upsert}),
+    ok.
 
 delete(Coll, Selector) ->
-    mongo_pool:delete(?POOL_NAME, Coll, map_to_bson(Selector)).
+    mongo_api:delete(?POOL_NAME, Coll, map_to_bson(Selector)).
 
 find_one(Coll, Selector) ->
-    case mongo_pool:find_one(?POOL_NAME, Coll, map_to_bson(Selector)) of
-        {} -> #{error => no_entry};
-        {Res} -> bson_to_map(Res)
+    Ans = mongo_api:find_one(?POOL_NAME, Coll, map_to_bson(Selector), {}),
+    ct:log("Ans=~p", [Ans]),
+    % Ans.
+    case Ans of
+        #{} -> Ans;
+        _ -> #{error => no_entry}
     end.
+    % case Ans of
+    %     {} -> #{error => no_entry};
+    %     {Res} -> bson_to_map(Res)
+    % end.
 
 aggregate(Coll, Pipeline) ->
     Cmd = {
@@ -56,13 +88,13 @@ aggregate(Coll, Pipeline) ->
     },
 
     % Original (not implemented yet)
-    % Res = mongo_pool:command(?POOL_NAME, Cmd),
-    {Res} = mongo_pool:find_one(?POOL_NAME, '$cmd', Cmd),
+    % Res = mongo_api:command(?POOL_NAME, Cmd),
+    {Res} = mongo_api:find_one(?POOL_NAME, '$cmd', Cmd),
     _Ok = bson:at(ok, Res),  % 1.0 если выполнение успешно
     bson_to_map(bson:at(result, Res)).
 
 ensure_index(Coll, IndexSpec) ->
-    mongo_pool:ensure_index(?POOL_NAME, Coll, IndexSpec).
+    mongo_api:ensure_index(?POOL_NAME, Coll, IndexSpec).
 
 % % Преобразование bson:document() в значение, готовое к jsxn:encode
 
@@ -79,6 +111,7 @@ bson_to_map(Document) when is_list(Document) ->
     [bson_to_map(Value) || Value <- Document];
 
 bson_to_map(Document) when is_tuple(Document) ->
+    ct:log("bson_to_map(~p)", [Document]),
     bson:doc_foldl(fun
         ('_id', {Value}, Acc) ->   % автоматически oid
             Acc#{id => base64:encode(Value)};
