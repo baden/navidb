@@ -10,11 +10,8 @@ all() -> [test1, test2, remove].
 
 init_per_suite(Config) ->
     error_logger:tty(false),
-    ct:log("1", []),
     % Res = application:start(navidb),
     {ok, _Modules} = application:ensure_all_started(navidb),
-    % ct:log("2 (~p)", [Res]),
-    ct:log("2", []),
     OTPRel = erlang:system_info(otp_release),
     % [{modules, Modules}, {otp_release, OTPRel} | Config].
     [{otp_release, OTPRel} | Config].
@@ -102,10 +99,10 @@ remove(Config) ->
     [10] = navidb:get_gps_hours(Skey, 0, 20),
 
     Selector = #{
-        'system' => Skey,
-        'hour' => #{
-            '$gte' => 9,
-            '$lte' => 11
+        <<"system">> => Skey,
+        <<"hour">> => #{
+            <<"$gte">> => 9,
+            <<"$lte">> => 11
         }
     },
     navidb:remove(gps, Selector, {flush, {gps, Skey}}),

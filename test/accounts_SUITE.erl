@@ -21,21 +21,18 @@ end_per_suite(Config) ->
     ok.
 
 init_per_testcase(_Case, Config) ->
-    #{username := Username} = Account = helper:fake_account(),
-    % ct:log("Account=~p", [Account]),
+    #{<<"username">> := Username} = Account = helper:fake_account(),
     navidb:insert(accounts, Account),
     [{username, Username} | Config].
 
 end_per_testcase(_Case, Config) ->
     Username = ?config(username, Config),
-    navidb:remove(accounts, #{username => Username}),
+    navidb:remove(accounts, #{<<"username">> => Username}),
     ok.
 
 get(Config) ->
     Username = ?config(username, Config),
     Res2 = navidb:get(accounts, {username, Username}, {filter, [id, 'password']}),
-    ct:log("Res2=~p", [Res2]),
-    ct:log("Username=~p", [Username]),
     ?assertMatch(#{
                     <<"username">> := Username,
                     <<"groups">>   := [],

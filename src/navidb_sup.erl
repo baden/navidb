@@ -26,7 +26,6 @@ start_link() ->
 %-include("deps/mongodb/include/mongo_protocol.hrl").
 
 init([]) ->
-    ct:log("navidb_subs:init"),
     ok = navidb_cache:start(),
 
     % Worker      = ?CHILD(navidb_worker, worker),
@@ -63,8 +62,6 @@ init([]) ->
     % {ok, { {one_for_one, 5, 10}, [MongoDBPool, Worker, GPSDB, Websocket]} }.
     % {ok, { {one_for_one, 5, 10}, [Worker, GPSDB, Websocket, MongoPool]} }.
     % {ok, { {one_for_one, 5, 10}, [GPSDB, Subscriber, MongoPool]} }.
-
-    ct:log("navidb_subs:init/done"),
 
     {ok, { {one_for_one, 5, 10}, [GPSDB, Subscriber]} }.
     % {ok, { {one_for_one, 5, 10}, [MondoDB, Worker, GPSDB, Websocket] ++ PoolSpecs} }.

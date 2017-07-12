@@ -70,6 +70,9 @@ get(command, Skey) ->
 % Protect from use map for Selector
 % get(_Collection, Selector) when is_map(Selector) ->
 %     erlang:error(badarg);
+get(systems, Skey) when is_binary(Skey) ->
+    get(systems, #{id => Skey});
+
 get(Collection, Key) when is_binary(Key) ->
     get(Collection, {id, Key});
 
@@ -77,9 +80,7 @@ get(Collection, Selector) when is_tuple(Selector); is_map(Selector) ->
     RawDoc = navidb_mongodb:find_one(collection_name(Collection), Selector),
     prepare_doc(Collection, RawDoc).
 
-% По идее это тоже нужно перенести в navidb
 % Присобачить к записи системы виртуальное поле dynamic
-% prepare_doc(systems, Document = #{<<"id">> := Skey}) ->
 prepare_doc(systems, Document = #{id := Skey}) ->
     case navidb:get(dynamic, Skey) of
         {ok, Dynamic} ->
@@ -97,9 +98,9 @@ prepare_doc(params, Document = #{data := Data}) ->
                 % type_to_repr(Name),
                 Name,
                 #{
-                    type    => Type,
-                    value   => remquotes(Value),
-                    default => remquotes(Default)
+                    <<"type">>    => Type,
+                    <<"value">>   => remquotes(Value),
+                    <<"default">> => remquotes(Default)
                 },
                 Acc
             )
@@ -144,24 +145,24 @@ get(system, Skey, cached) ->
 
             #{
                 id      => Skey,
-                imei    => Imei,                                % IMEI
-                date    => unixtime(),                          % Дата/время первого выхода на связь
-                phone   => <<>>,                                % Номер SIM-карты
-                premium => unixtime() + 60*60*24*31,            % 1 месяц премиум-подписки
-                title   => <<"Трекер "/utf8, LastImei/binary>>, % Отображаемое наименование транспортного средства
-                icon    => <<"caricon-truck">>,                 % Значек
-                car     => {},                                  % Запись о транспортном средстве
-                tags    => [],                                  % Ярлыки
-                groups  => [],                                  % Принадлежность к группам
-                lock    => false,                               % Если установлен в true, то данный трекер запрещено добавлять в список наблюдения
-                public  => true,                                % Если установлен в true, то трекер доступен для автоматического добавления членам группы
-                params  => #{
-                    fuel => [
-                        #{voltage =>  0.0, liters => 0.0},
-                        #{voltage => 10.0, liters => 100.0}
+                <<"imei">>    => Imei,                                % IMEI
+                <<"date">>    => unixtime(),                          % Дата/время первого выхода на связь
+                <<"phone">>   => <<>>,                                % Номер SIM-карты
+                <<"premium">> => unixtime() + 60*60*24*31,            % 1 месяц премиум-подписки
+                <<"title">>   => <<"Трекер "/utf8, LastImei/binary>>, % Отображаемое наименование транспортного средства
+                <<"icon">>    => <<"caricon-truck">>,                 % Значек
+                <<"car">>     => {},                                  % Запись о транспортном средстве
+                <<"tags">>    => [],                                  % Ярлыки
+                <<"groups">>  => [],                                  % Принадлежность к группам
+                <<"lock">>    => false,                               % Если установлен в true, то данный трекер запрещено добавлять в список наблюдения
+                <<"public">>  => true,                                % Если установлен в true, то трекер доступен для автоматического добавления членам группы
+                <<"params">>  => #{
+                    <<"fuel">> => [
+                        #{<<"voltage">> =>  0.0, <<"liters">> => 0.0},
+                        #{<<"voltage">> => 10.0, <<"liters">> => 100.0}
                     ],
                     % notranslate, false              % Если установлен в true, то трансляция данных на старый сервер не требуется
-                    notranslate => true              % Если установлен в true, то трансляция данных на старый сервер не требуется
+                    <<"notranslate">> => true              % Если установлен в true, то трансляция данных на старый сервер не требуется
                 }
             }
         end
@@ -299,7 +300,6 @@ get_geos(Skey, From, To) ->
         [] ->
             <<"">>;
         [#{<<"data">> := [[{bin, bin, RawData}]]}] ->
-            ct:log("RawData=~p", [RawData]),
             % {bin, bin, Bin} = RawData,
             RawData
             % list_to_binary(RawData)
