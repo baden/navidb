@@ -2,7 +2,7 @@ language: erlang
 otp_release:
   # - 17.5
   # - 18.3
-  - 19.0
+  # - 19.0
   - 20.0
 script: "sleep 5 && make tests"
 branches:
@@ -14,3 +14,9 @@ notifications:
     - baden.i.ua@gmail.com
 services:
   - mongodb
+addons:
+  apt:
+    sources:
+    - mongodb-3.0-precise
+    packages:
+    - mongodb-org-server
